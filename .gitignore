@@ -4,6 +4,13 @@ chateau.mp4
 # Config del editor
 .vscode/
 
+# Dependencias / builds
+node_modules/
+frontend/dist/
+
+# Entorno (secretos)
+.env
+
 # Sistema
 Thumbs.db
 .DS_Store

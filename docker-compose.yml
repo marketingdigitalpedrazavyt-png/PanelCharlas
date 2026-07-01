@@ -1,0 +1,82 @@
+# =========================================================
+#  Maravillas del Mediterráneo — Stack completo en Docker
+#  Servicios: mysql · backend (Express/hexagonal) · frontend
+#  (React+Vite servido por nginx) · waha (WhatsApp HTTP API)
+# =========================================================
+services:
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [interna]
+
+  waha:
+    image: devlikeapro/waha:latest
+    restart: unless-stopped
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+    ports:
+      - "3000:3000"        # dashboard de WAHA para escanear el QR de WhatsApp
+    volumes:
+      - waha_sessions:/app/.sessions
+    networks: [interna]
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      # --- MySQL ---
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      # --- Auth ---
+      JWT_SECRET: ${JWT_SECRET}
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD}
+      # --- Paquete / credencial ---
+      PAQUETE_NOMBRE: ${PAQUETE_NOMBRE}
+      PAQUETE_BAJADA: ${PAQUETE_BAJADA}
+      # --- WhatsApp (WAHA) ---
+      WHATSAPP_ENABLED: ${WHATSAPP_ENABLED}
+      WAHA_URL: http://waha:3000
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_SESSION: default
+    networks: [interna]
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on: [backend]
+    ports:
+      - "8080:80"          # http://localhost:8080  → formulario, /panel, /escaner
+    networks: [interna]
+
+volumes:
+  mysql_data:
+  waha_sessions:
+
+networks:
+  interna:
+    driver: bridge
