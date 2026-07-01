@@ -244,7 +244,7 @@ function EventosTab({ eventos, onChange }) {
         <h2>Eventos creados</h2>
         <div className="list">
           {eventos.length ? eventos.map((ev) => (
-            <div className="list-item" key={ev.id} style={editId === ev.id ? { borderColor: "var(--accent)" } : null}>
+            <div className="list-item" key={ev.id} style={editId === ev.id ? { borderColor: "rgba(255,255,255,0.5)" } : null}>
               <div className="list-item__info"><strong>{ev.etiqueta}</strong><span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span></div>
               <button className="btn btn--ghost btn--sm" onClick={() => editar(ev)}>Editar</button>
               <button className="icon-btn" onClick={() => borrar(ev.id)}>✕</button>

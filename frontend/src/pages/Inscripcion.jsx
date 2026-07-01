@@ -157,15 +157,9 @@ export default function Inscripcion() {
 
       <main className="container">
         <section className="hero">
-          <p className="brand"><span className="brand__line" /> Pedraza · Viajes &amp; Turismo</p>
           <span className="hero__eyebrow">Charla informativa</span>
           <h1 className="hero__title">Descubrí las<br /><span className="gilded">Maravillas</span> del Mediterráneo</h1>
           <p className="hero__subtitle">Inscribite a nuestra charla exclusiva y conocé los itinerarios: aguas cristalinas, puertos históricos y atardeceres inolvidables.</p>
-          <ul className="trust">
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.3 7.2 18.7l.9-5.4L4.2 8.7l5.4-.8Z" /></svg>Charla sin cargo</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3Z" /><path d="M9 4v13M15 7v13" /></svg>Itinerarios exclusivos</li>
-            <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-4.5-7-10a7 7 0 0 1 14 0c0 5.5-7 10-7 10Z" /><circle cx="12" cy="11" r="2.4" /></svg>Cupos limitados</li>
-          </ul>
         </section>
 
         <section className="card-wrap">
