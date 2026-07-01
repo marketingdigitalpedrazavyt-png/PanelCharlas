@@ -227,9 +227,9 @@ body {
 /* Logo Pedraza sobre el título (grande) */
 .hero__logo {
     display: block;
-    width: clamp(220px, 24vw, 320px);
+    width: clamp(200px, 22vw, 300px);
     height: auto;
-    margin: 0 0 22px;
+    margin: 0 0 14px;
     filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55));
 }
 
@@ -415,7 +415,7 @@ body {
     position: relative;
     width: min(440px, 100%);
     margin: 0 auto;
-    padding: 28px 32px 24px;
+    padding: 20px 30px 18px;
     border-radius: 26px;
     background:
         linear-gradient(180deg, rgba(13, 36, 68, 0.66), rgba(5, 18, 38, 0.8));
@@ -463,7 +463,7 @@ body {
 
 .form-head {
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 .form-head .script {
@@ -501,15 +501,15 @@ body {
 /* ---------- Campos ---------- */
 .field {
     position: relative;
-    margin-top: 14px;
+    margin-top: 9px;
 }
 
 /* Dos campos en el mismo renglón (compacta el alto del form) */
 .field-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-top: 14px;
+    gap: 12px;
+    margin-top: 9px;
 }
 .field-row .field { margin-top: 0; }
 
@@ -521,7 +521,7 @@ body {
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--champagne);
-    margin-bottom: 7px;
+    margin-bottom: 5px;
     font-weight: 600;
     transition: color 0.3s var(--ease-soft);
 }
@@ -544,7 +544,7 @@ body {
 .formulario input[type="text"],
 .formulario input[type="tel"] {
     width: 100%;
-    padding: 13px 14px;
+    padding: 10px 14px;
     border-radius: 13px;
     border: 1px solid rgba(231, 205, 151, 0.22);
     background: rgba(4, 19, 31, 0.5);
@@ -597,7 +597,7 @@ body {
 .field__check {
     position: absolute;
     right: 13px;
-    bottom: 13px;
+    bottom: 9px;
     width: 21px;
     height: 21px;
     padding: 3px;
@@ -659,7 +659,7 @@ body {
 /* ---------- Botón principal ---------- */
 #submitBtn {
     position: relative;
-    margin-top: 18px;
+    margin-top: 12px;
     width: 100%;
     border: none;
     border-radius: 999px;
@@ -1495,7 +1495,7 @@ body {
 /* Select de evento en el formulario */
 .formulario select {
     width: 100%;
-    padding: 13px 40px 13px 14px;
+    padding: 10px 40px 10px 14px;
     border-radius: 13px;
     border: 1px solid rgba(231, 205, 151, 0.22);
     background-color: rgba(4, 19, 31, 0.5);
