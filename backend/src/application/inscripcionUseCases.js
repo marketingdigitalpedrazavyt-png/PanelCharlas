@@ -41,8 +41,11 @@ class CrearInscripcion {
     if (this.config.whatsappEnabled) {
       try {
         const { png } = await this.credencial.generar(datosCredencial(creada, evento));
-        const caption = `¡Hola ${creada.nombre}! Tu credencial para ${this.config.paqueteNombre}. ` +
-          `Presentá este código en el ingreso: ${creada.codigo}`;
+        const caption =
+          `¡Hola ${creada.nombre}! Te dejamos tu credencial para la charla informativa ` +
+          `sobre el paquete: Las Maravillas del Mediterráneo. ` +
+          `Presentá este código en el ingreso: ${creada.codigo} o mostrá el QR de la credencial. ` +
+          `¡Te esperamos!`;
         whatsapp = await this.whatsapp.enviarImagen({
           celularWhatsApp: celularAWhatsApp(creada.celular), caption, png,
         });

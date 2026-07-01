@@ -97,11 +97,14 @@ class CanvasCredencialGenerator extends CredencialGenerator {
     const lugar = [ev.lugar, ev.direccion, ev.barrio].filter(Boolean).join(" · ") || "A confirmar";
     detalle(ctx, padX, colY + 184, "LUGAR", lugar, stubX - padX - 40);
 
-    // Logo
+    // Sello temático (crucero) — estampado inclinado
+    drawSello(ctx, 708, 462, 98);
+
+    // Logo (grande, abajo a la izquierda)
     try {
       const logo = await loadImage(path.join(ASSETS, "logopedraza.png"));
-      const lw = 150, lh = lw * (logo.height / logo.width);
-      ctx.drawImage(logo, padX, H - 60 - lh / 2, lw, lh);
+      const lw = 400, lh = lw * (logo.height / logo.width);
+      ctx.drawImage(logo, padX, H - 36 - lh, lw, lh);
     } catch (e) { /* sin logo */ }
 
     // Talón: QR
@@ -187,6 +190,74 @@ function fitText(ctx, text, x, y, maxW) {
     size -= 2;
   }
   ctx.fillText(text, x, y);
+}
+
+/* ---------- Sello temático (crucero) ---------- */
+function drawSello(ctx, cx, cy, r) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((-12 * Math.PI) / 180);
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = GOLD;
+  ctx.fillStyle = GOLD;
+
+  ctx.lineWidth = 3; ring(ctx, r);
+  ctx.lineWidth = 1.2; ring(ctx, r - 9);
+  ctx.save(); ctx.setLineDash([2, 5]); ctx.lineWidth = 1; ring(ctx, r - 23); ctx.restore();
+
+  ctx.font = "700 11px 'Montserrat'";
+  textoArco(ctx, "MARAVILLAS DEL MEDITERRÁNEO", r - 20, true);
+  textoArco(ctx, "CHARLA INFORMATIVA", r - 20, false);
+
+  ctx.font = "700 12px 'Montserrat'";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("✦", -(r - 17), 0); ctx.fillText("✦", r - 17, 0);
+
+  drawCrucero(ctx);
+  ctx.restore();
+}
+function ring(ctx, r) { ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); }
+
+function textoArco(ctx, texto, radio, arriba) {
+  if (!arriba) texto = Array.from(texto).reverse().join(""); // el arco inferior se dibuja invertido
+  ctx.save();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  const anchos = []; let total = 0;
+  for (const ch of texto) { const w = ctx.measureText(ch).width + 2; anchos.push(w); total += w; }
+  if (arriba) {
+    let a = -(total / radio) / 2;
+    for (let i = 0; i < texto.length; i++) {
+      const da = anchos[i] / radio; a += da / 2;
+      ctx.save(); ctx.rotate(a); ctx.translate(0, -radio); ctx.fillText(texto[i], 0, 0); ctx.restore();
+      a += da / 2;
+    }
+  } else {
+    let a = (total / radio) / 2;
+    for (let i = 0; i < texto.length; i++) {
+      const da = anchos[i] / radio; a -= da / 2;
+      ctx.save(); ctx.rotate(a); ctx.translate(0, radio); ctx.rotate(Math.PI); ctx.fillText(texto[i], 0, 0); ctx.restore();
+      a -= da / 2;
+    }
+  }
+  ctx.restore();
+}
+
+function drawCrucero(ctx) {
+  ctx.save();
+  ctx.fillStyle = GOLD; ctx.strokeStyle = GOLD;
+  // casco
+  ctx.beginPath();
+  ctx.moveTo(-30, 9); ctx.lineTo(28, 9); ctx.lineTo(22, 18); ctx.lineTo(-24, 18); ctx.closePath(); ctx.fill();
+  // cubierta y cabina
+  ctx.fillRect(-22, 1, 42, 8);
+  ctx.fillRect(-12, -7, 24, 8);
+  // chimeneas
+  ctx.fillRect(2, -14, 5, 8); ctx.fillRect(10, -14, 5, 8);
+  // línea de agua ondulada
+  ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-34, 24);
+  for (let x = -34; x <= 30; x += 8) ctx.quadraticCurveTo(x + 4, 21, x + 8, 24);
+  ctx.stroke();
+  ctx.restore();
 }
 
 module.exports = { CanvasCredencialGenerator };
