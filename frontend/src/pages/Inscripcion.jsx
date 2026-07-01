@@ -186,12 +186,12 @@ export default function Inscripcion() {
             </div>
 
             <div className="field-row">
-              {field("nombre", "Nombre", { placeholder: "Tu nombre", autoComplete: "given-name" })}
-              {field("apellido", "Apellido", { placeholder: "Tu apellido", autoComplete: "family-name" })}
+              {field("nombre", "Nombre", { type: "text", placeholder: "Tu nombre", autoComplete: "given-name" })}
+              {field("apellido", "Apellido", { type: "text", placeholder: "Tu apellido", autoComplete: "family-name" })}
             </div>
             <div className="field-row">
-              {field("dni", "DNI", { placeholder: "Ej: 30123456", inputMode: "numeric" })}
-              {field("celular", "Celular", { placeholder: "11 5555 5555", inputMode: "tel", maxLength: 14 })}
+              {field("dni", "DNI", { type: "text", placeholder: "Ej: 30123456", inputMode: "numeric" })}
+              {field("celular", "Celular", { type: "tel", placeholder: "11 5555 5555", inputMode: "tel", maxLength: 14 })}
             </div>
 
             <div className={"form-error" + (error ? " show" : "")} role="alert" aria-live="assertive">
