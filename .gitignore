@@ -1,0 +1,9 @@
+# Video viejo (ya no se usa; el fondo es crucero.mp4)
+chateau.mp4
+
+# Config del editor
+.vscode/
+
+# Sistema
+Thumbs.db
+.DS_Store

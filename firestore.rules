@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// =========================================================
+//  Reglas de seguridad · "Maravillas del Mediterráneo"
+//  Pegá esto en Firebase Console → Firestore → Reglas.
+//
+//  Modelo:
+//   - El FORMULARIO es público (crea inscripciones, lee
+//     eventos/vendedores y hace la verificación de duplicados).
+//   - El ESCÁNER es abierto (marca asistencia sin login), pero
+//     SOLO puede pasar asistio de false→true.
+//   - El PANEL requiere Firebase Auth (email/contraseña) para
+//     borrar inscriptos y administrar eventos/vendedores.
+//   - Solo el SUPERADMIN administra usuarios.
+// =========================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isSuper() {
+      return signedIn() && request.auth.token.email == 'cm@pedraza.com.ar';
+    }
+
+    // ---- Eventos ----
+    match /eventos/{id} {
+      allow read: if true;                 // el formulario los muestra
+      allow write: if signedIn();          // se administran desde el panel
+    }
+
+    // ---- Vendedores ----
+    match /vendedores/{slug} {
+      allow read: if true;                 // el formulario resuelve ?v=slug
+      allow write: if signedIn();
+    }
+
+    // ---- Inscripciones ----
+    match /inscripciones/{codigo} {
+      allow read: if true;                 // verificación de duplicados + panel
+
+      // Alta pública desde el formulario (entra como NO asistido).
+      allow create: if request.resource.data.asistio == false
+        && request.resource.data.codigo is string
+        && request.resource.data.nombre is string
+        && request.resource.data.apellido is string
+        && request.resource.data.dni is string
+        && request.resource.data.celular is string;
+
+      // El escáner (abierto) solo puede marcar asistencia una vez.
+      allow update: if resource.data.asistio == false
+        && request.resource.data.asistio == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['asistio', 'asistioTimestamp']);
+
+      // Borrar inscriptos: solo staff logueado (desde el panel).
+      allow delete: if signedIn();
+    }
+
+    // ---- Usuarios del equipo (solo el superadmin) ----
+    match /usuarios/{uid} {
+      allow read, write: if isSuper();
+    }
+  }
+}

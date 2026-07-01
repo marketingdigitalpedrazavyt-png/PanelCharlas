@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel · Maravillas del Mediterráneo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1220">
+    <meta name="robots" content="noindex">
+
+    <link rel="stylesheet" href="admin.css?v=1.0">
+
+    <!-- Firebase (app + auth + firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+
+    <!-- Credencial (QR + PDF) + exportación XLSX -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="credencial.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ===== LOGIN ===== -->
+    <div class="login" id="login">
+        <form class="login-card" id="loginForm">
+            <p class="login-brand">Pedraza · Panel</p>
+            <h1>Iniciar sesión</h1>
+            <p class="sub">Acceso exclusivo del equipo.</p>
+
+            <div class="field">
+                <label for="email">Email</label>
+                <input class="input" type="email" id="email" autocomplete="username" placeholder="tu@pedraza.com.ar" required>
+            </div>
+            <div class="field">
+                <label for="pass">Contraseña</label>
+                <input class="input" type="password" id="pass" autocomplete="current-password" placeholder="••••••••" required>
+            </div>
+            <p class="msg-error" id="loginError" role="alert"></p>
+            <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Ingresar</button>
+        </form>
+    </div>
+
+    <!-- ===== APP ===== -->
+    <div class="shell" id="shell" style="display:none">
+        <div class="topbar">
+            <div class="topbar__title">
+                <span class="topbar__logo"></span>
+                <div><h1>Panel de administración</h1><span>Maravillas del Mediterráneo</span></div>
+            </div>
+            <div class="topbar__user">
+                <nav class="pagenav">
+                    <a href="panel.html" class="is-active">Panel</a>
+                    <a href="escaner.html">Escáner</a>
+                </nav>
+                <span id="whoami"></span>
+                <button class="btn btn--ghost btn--sm" id="logoutBtn" type="button">Salir</button>
+            </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+            <button class="tab is-active" data-tab="inscriptos">Inscriptos</button>
+            <button class="tab" data-tab="eventos">Eventos</button>
+            <button class="tab" data-tab="vendedores">Vendedores</button>
+            <button class="tab" data-tab="usuarios" id="tabUsuariosBtn" style="display:none">Usuarios</button>
+        </div>
+
+        <!-- ===== INSCRIPTOS ===== -->
+        <div class="tab-panel is-active" id="tab-inscriptos">
+            <div class="stats">
+                <div class="stat stat--accent"><b id="stTotal">0</b><span>Inscriptos</span></div>
+                <div class="stat"><b id="stAsis">0</b><span>Asistieron</span></div>
+                <div class="stat"><b id="stPend">0</b><span>Pendientes</span></div>
+                <div class="stat"><b id="stEventos">0</b><span>Eventos activos</span></div>
+            </div>
+
+            <div class="toolbar">
+                <input class="input" id="search" type="search" placeholder="Buscar por nombre, DNI, código…">
+                <select class="input select" id="filterEvento"><option value="">Todos los eventos</option></select>
+                <select class="input select" id="filterVendedor"><option value="">Todos los vendedores</option></select>
+                <button class="btn btn--ghost btn--sm" id="csvBtn" type="button">Exportar CSV</button>
+                <button class="btn btn--ghost btn--sm" id="xlsxBtn" type="button">Exportar Excel</button>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th><th>DNI</th><th>Celular</th>
+                            <th>Evento</th><th>Día / Hora</th><th>Vendedor</th>
+                            <th>Código</th><th>Asistió</th><th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+            <p class="empty" id="empty" style="display:none">Sin inscriptos todavía.</p>
+        </div>
+
+        <!-- ===== EVENTOS ===== -->
+        <div class="tab-panel" id="tab-eventos">
+            <div class="card">
+                <h2>Crear evento</h2>
+                <form id="evForm" class="form-grid" novalidate>
+                    <div class="form-2">
+                        <label>Día <span class="req">*</span><input class="input" type="date" id="ev_dia" required></label>
+                        <label>Hora <span class="req">*</span><input class="input" type="time" id="ev_hora" required></label>
+                    </div>
+                    <label>Lugar <span class="hint">(opcional)</span><input class="input" type="text" id="ev_lugar" placeholder="Ej: Hotel Alvear"></label>
+                    <label>Dirección <span class="req">*</span><input class="input" type="text" id="ev_direccion" required placeholder="Ej: Av. Alvear 1891"></label>
+                    <div class="form-2">
+                        <label>Barrio <span class="req">*</span><input class="input" type="text" id="ev_barrio" required placeholder="Ej: Recoleta"></label>
+                        <label>Vendedor a cargo <span class="hint">(opcional)</span><input class="input" type="text" id="ev_vendedor"></label>
+                    </div>
+                    <p class="msg-error" id="evError"></p>
+                    <button class="btn btn--primary" type="submit">Crear evento</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>Eventos creados</h2>
+                <div id="evList" class="list"></div>
+            </div>
+        </div>
+
+        <!-- ===== VENDEDORES ===== -->
+        <div class="tab-panel" id="tab-vendedores">
+            <div class="card">
+                <h2>Crear vendedor</h2>
+                <p class="sub" style="color:var(--muted);margin:-6px 0 14px;font-size:13px;">Cada vendedor tiene un link propio. Quien se inscribe desde ese link queda atribuido automáticamente.</p>
+                <form id="vForm" class="form-grid" novalidate>
+                    <label>Nombre del vendedor <span class="req">*</span><input class="input" type="text" id="v_nombre" required placeholder="Ej: María González"></label>
+                    <label>Código de link <span class="hint">(opcional, se genera del nombre)</span><input class="input" type="text" id="v_slug" placeholder="maria-gonzalez"></label>
+                    <p class="msg-error" id="vError"></p>
+                    <button class="btn btn--primary" type="submit">Crear vendedor</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>Vendedores y sus links</h2>
+                <div id="vList" class="list"></div>
+            </div>
+        </div>
+
+        <!-- ===== USUARIOS (solo superadmin) ===== -->
+        <div class="tab-panel" id="tab-usuarios">
+            <div class="stats" style="grid-template-columns:repeat(2,1fr);max-width:420px;">
+                <div class="stat stat--accent"><b id="stUsuarios">0</b><span>Usuarios</span></div>
+                <div class="stat"><b id="stSuper">1</b><span>Superadmin</span></div>
+            </div>
+            <div class="card">
+                <h2>Crear usuario</h2>
+                <form id="uForm" class="form-grid" novalidate>
+                    <div class="form-2">
+                        <label>Email <span class="req">*</span><input class="input" type="email" id="u_email" required placeholder="persona@pedraza.com.ar"></label>
+                        <label>Contraseña <span class="req">*</span><input class="input" type="text" id="u_pass" required placeholder="Mínimo 6 caracteres"></label>
+                    </div>
+                    <p class="msg-error" id="uError"></p>
+                    <p class="msg-ok" id="uOk"></p>
+                    <button class="btn btn--primary" type="submit">Crear usuario</button>
+                </form>
+            </div>
+            <div class="card">
+                <h2>Usuarios del equipo</h2>
+                <div id="uList" class="list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="panel.js"></script>
+</body>
+</html>
