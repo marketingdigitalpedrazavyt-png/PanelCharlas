@@ -65,7 +65,7 @@ export default function Panel() {
       if (fEvento && (r.eventoLabel || "") !== fEvento) return false;
       if (fVendedor && (r.vendedorNombre || "Directo") !== fVendedor) return false;
       if (!t) return true;
-      return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
+      return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
   }, [inscriptos, search, fEvento, fVendedor]);
 
@@ -73,7 +73,7 @@ export default function Panel() {
 
   function filasExport() {
     return filtrados.map((r) => ({
-      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular,
+      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, CJP: r.cjp || "",
       Evento: r.eventoLabel || "", Dia: fmtFecha(r.evento?.dia), Hora: r.evento?.hora || "",
       Vendedor: r.vendedorNombre || "Directo", Codigo: r.codigo,
       Asistio: r.asistio ? "Si" : "No", HoraIngreso: r.asistio ? fmtHoraIng(r.asistioAt) : "",
@@ -160,11 +160,12 @@ export default function Panel() {
           </div>
           <div className="table-wrap">
             <table className="data">
-              <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>Evento</th><th>Día / Hora</th><th>Vendedor</th><th>Código</th><th>Asistió</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>CJP</th><th>Evento</th><th>Día / Hora</th><th>Vendedor</th><th>Código</th><th>Asistió</th><th>Acciones</th></tr></thead>
               <tbody>
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
                     <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
+                    <td>{r.cjp}</td>
                     <td>{r.evento?.lugar || r.evento?.barrio || r.eventoLabel}</td>
                     <td>{fmtFecha(r.evento?.dia)}{r.evento?.hora ? " · " + r.evento.hora : ""}</td>
                     <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>

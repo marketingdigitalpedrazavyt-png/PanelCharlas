@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS inscripciones (
   apellido        VARCHAR(120) NOT NULL,
   dni             VARCHAR(20) NOT NULL,
   celular         VARCHAR(20) NOT NULL,
+  cjp             VARCHAR(120) NOT NULL DEFAULT '',
   evento_id       BIGINT UNSIGNED NULL,
   vendedor_slug   VARCHAR(60) NULL,
   vendedor_nombre VARCHAR(160) NOT NULL DEFAULT 'Directo',

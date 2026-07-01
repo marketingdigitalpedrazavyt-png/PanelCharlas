@@ -224,6 +224,15 @@ body {
     animation: rise 1s var(--ease-soft) both;
 }
 
+/* Logo Pedraza sobre el título (grande) */
+.hero__logo {
+    display: block;
+    width: clamp(220px, 24vw, 320px);
+    height: auto;
+    margin: 0 0 22px;
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.55));
+}
+
 .brand {
     display: flex;
     align-items: center;
@@ -1530,6 +1539,7 @@ body {
     }
     .hero { max-width: 620px; }
     .brand { justify-content: center; }
+    .hero__logo { margin-left: auto; margin-right: auto; }
     .hero__subtitle { margin-left: auto; margin-right: auto; }
     .trust { justify-content: center; }
     .compass { display: none; }

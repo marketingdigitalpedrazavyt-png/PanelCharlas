@@ -13,7 +13,7 @@ function maskPhone(v) {
 
 export default function Inscripcion() {
   const [eventos, setEventos] = useState(null);      // null = cargando
-  const [form, setForm] = useState({ eventoId: "", nombre: "", apellido: "", dni: "", celular: "" });
+  const [form, setForm] = useState({ eventoId: "", nombre: "", apellido: "", dni: "", celular: "", cjp: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [vendedor, setVendedor] = useState(null);
@@ -74,6 +74,7 @@ export default function Inscripcion() {
     apellido: form.apellido.trim().length >= 2,
     dni: onlyDigits(form.dni).length >= 7,
     celular: onlyDigits(form.celular).length >= 8,
+    cjp: form.cjp.trim().length >= 2,
   };
 
   function set(campo, valor) {
@@ -91,12 +92,14 @@ export default function Inscripcion() {
     if (!valido.apellido) return setError("Por favor ingresá tu apellido.");
     if (!valido.dni) return setError("Ingresá un DNI válido (sin puntos).");
     if (!valido.celular) return setError("Ingresá un celular válido.");
+    if (!valido.cjp) return setError("Ingresá a qué CJP pertenecés.");
 
     setLoading(true);
     try {
       const r = await api.crearInscripcion({
         nombre: form.nombre.trim(), apellido: form.apellido.trim(),
         dni: onlyDigits(form.dni), celular: onlyDigits(form.celular),
+        cjp: form.cjp.trim(),
         eventoId: Number(form.eventoId), vendedorSlug: vendedor?.slug || null,
       });
       setResult(r);
@@ -157,6 +160,7 @@ export default function Inscripcion() {
 
       <main className="container">
         <section className="hero">
+          <img src="/logopedraza.png" alt="Pedraza Viajes y Turismo" className="hero__logo" />
           <span className="hero__eyebrow">Charla informativa</span>
           <h1 className="hero__title">Descubrí las<br /><span className="gilded">Maravillas</span> del Mediterráneo</h1>
           <p className="hero__subtitle">Inscribite a nuestra charla exclusiva y conocé los itinerarios: aguas cristalinas, puertos históricos y atardeceres inolvidables.</p>
@@ -188,6 +192,7 @@ export default function Inscripcion() {
               {field("dni", "DNI", { type: "text", placeholder: "Ej: 30123456", inputMode: "numeric" })}
               {field("celular", "Celular", { type: "tel", placeholder: "11 15 5555 5555", inputMode: "tel", maxLength: 17 })}
             </div>
+            {field("cjp", "¿A qué CJP pertenecés?", { type: "text", placeholder: "Tu CJP" })}
 
             <div className={"form-error" + (error ? " show" : "")} role="alert" aria-live="assertive">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" /></svg>
@@ -197,7 +202,6 @@ export default function Inscripcion() {
             <button type="submit" id="submitBtn" disabled={loading || (eventos && eventos.length === 0)}>
               Confirmar mi inscripción
             </button>
-            <img src="/logopedraza.png" alt="Pedraza Viajes y Turismo" className="logo" />
           </form>
         </section>
       </main>

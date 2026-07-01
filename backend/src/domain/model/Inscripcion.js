@@ -15,7 +15,7 @@ function generarCodigo() {
  * Entidad Inscripcion. Obligatorios: nombre, apellido, dni(≥7), celular(≥8), eventoId.
  */
 function crearInscripcion({
-  id = null, codigo = null, nombre, apellido, dni, celular,
+  id = null, codigo = null, nombre, apellido, dni, celular, cjp,
   eventoId, vendedorSlug = null, vendedorNombre = "Directo",
   asistio = false, asistioAt = null,
 }) {
@@ -23,17 +23,19 @@ function crearInscripcion({
   apellido = String(apellido || "").trim();
   dni = soloDigitos(dni);
   celular = soloDigitos(celular);
+  cjp = String(cjp || "").trim();
 
   if (nombre.length < 2) throw new ValidationError("Ingresá tu nombre.");
   if (apellido.length < 2) throw new ValidationError("Ingresá tu apellido.");
   if (dni.length < 7) throw new ValidationError("Ingresá un DNI válido (sin puntos).");
   if (celular.length < 8) throw new ValidationError("Ingresá un celular válido.");
+  if (cjp.length < 2) throw new ValidationError("Ingresá a qué CJP pertenecés.");
   if (!eventoId) throw new ValidationError("Elegí el evento al que vas a asistir.");
 
   return Object.freeze({
     id,
     codigo: codigo || generarCodigo(),
-    nombre, apellido, dni, celular,
+    nombre, apellido, dni, celular, cjp,
     eventoId,
     vendedorSlug: vendedorSlug || null,
     vendedorNombre: vendedorNombre || "Directo",

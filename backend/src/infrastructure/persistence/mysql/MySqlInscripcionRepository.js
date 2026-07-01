@@ -11,6 +11,7 @@ function map(row) {
     apellido: row.apellido,
     dni: row.dni,
     celular: row.celular,
+    cjp: row.cjp || "",
     vendedorSlug: row.vendedor_slug || null,
     vendedorNombre: row.vendedor_nombre || "Directo",
     asistio: !!row.asistio,
@@ -36,11 +37,12 @@ class MySqlInscripcionRepository extends InscripcionRepository {
     try {
       const [res] = await pool.query(
         `INSERT INTO inscripciones
-           (codigo, nombre, apellido, dni, celular, evento_id, vendedor_slug, vendedor_nombre, asistio)
-         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :eventoId, :vendedorSlug, :vendedorNombre, 0)`,
+           (codigo, nombre, apellido, dni, celular, cjp, evento_id, vendedor_slug, vendedor_nombre, asistio)
+         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :cjp, :eventoId, :vendedorSlug, :vendedorNombre, 0)`,
         {
           codigo: insc.codigo, nombre: insc.nombre, apellido: insc.apellido,
-          dni: insc.dni, celular: insc.celular, eventoId: insc.eventoId,
+          dni: insc.dni, celular: insc.celular, cjp: insc.cjp || "",
+          eventoId: insc.eventoId,
           vendedorSlug: insc.vendedorSlug, vendedorNombre: insc.vendedorNombre,
         }
       );

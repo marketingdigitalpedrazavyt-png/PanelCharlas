@@ -18,7 +18,7 @@ class CrearInscripcion {
   constructor({ inscripcionRepo, eventoRepo, vendedorRepo, credencial, whatsapp, config }) {
     Object.assign(this, { inscripcionRepo, eventoRepo, vendedorRepo, credencial, whatsapp, config });
   }
-  async execute({ nombre, apellido, dni, celular, eventoId, vendedorSlug }) {
+  async execute({ nombre, apellido, dni, celular, cjp, eventoId, vendedorSlug }) {
     const evento = await this.eventoRepo.buscarPorId(eventoId);
     if (!evento || !evento.activo) throw new ValidationError("El evento elegido no está disponible.");
 
@@ -31,7 +31,7 @@ class CrearInscripcion {
     }
 
     const inscripcion = crearInscripcion({
-      nombre, apellido, dni, celular, eventoId: evento.id,
+      nombre, apellido, dni, celular, cjp, eventoId: evento.id,
       vendedorSlug: slug, vendedorNombre,
     });
     const creada = await this.inscripcionRepo.crear(inscripcion); // puede lanzar ConflictError
