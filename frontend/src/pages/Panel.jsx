@@ -191,20 +191,38 @@ export default function Panel() {
 
 /* ================= Eventos ================= */
 function EventosTab({ eventos, onChange }) {
-  const [f, setF] = useState({ dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "" });
+  const VACIO = { dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "" };
+  const [f, setF] = useState(VACIO);
+  const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
-  async function crear(e) {
-    e.preventDefault(); setError("");
-    try { await api.crearEvento(f); setF({ dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "" }); onChange(); }
-    catch (err) { setError(err.message); }
-  }
-  async function borrar(id) { if (confirm("¿Eliminar este evento?")) { await api.eliminarEvento(id); onChange(); } }
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  function editar(ev) {
+    setEditId(ev.id);
+    setF({ dia: ev.dia || "", hora: ev.hora || "", lugar: ev.lugar || "", direccion: ev.direccion || "", barrio: ev.barrio || "", vendedor: ev.vendedor || "" });
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function cancelar() { setEditId(null); setF(VACIO); setError(""); }
+
+  async function guardar(e) {
+    e.preventDefault(); setError("");
+    try {
+      if (editId) await api.actualizarEvento(editId, f);
+      else await api.crearEvento(f);
+      cancelar(); onChange();
+    } catch (err) { setError(err.message); }
+  }
+  async function borrar(id) {
+    if (!confirm("¿Eliminar este evento?")) return;
+    await api.eliminarEvento(id); if (editId === id) cancelar(); onChange();
+  }
+
   return (
     <div className="tab-panel is-active">
       <div className="card">
-        <h2>Crear evento</h2>
-        <form className="form-grid" onSubmit={crear}>
+        <h2>{editId ? "Editar evento" : "Crear evento"}</h2>
+        <form className="form-grid" onSubmit={guardar}>
           <div className="form-2">
             <label>Día <span className="req">*</span><input className="input" type="date" value={f.dia} onChange={set("dia")} /></label>
             <label>Hora <span className="req">*</span><input className="input" type="time" value={f.hora} onChange={set("hora")} /></label>
@@ -216,15 +234,19 @@ function EventosTab({ eventos, onChange }) {
             <label>Vendedor a cargo <span className="hint">(opcional)</span><input className="input" value={f.vendedor} onChange={set("vendedor")} /></label>
           </div>
           <p className="msg-error">{error}</p>
-          <button className="btn btn--primary">Crear evento</button>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn btn--primary">{editId ? "Guardar cambios" : "Crear evento"}</button>
+            {editId && <button type="button" className="btn btn--ghost" onClick={cancelar}>Cancelar</button>}
+          </div>
         </form>
       </div>
       <div className="card">
         <h2>Eventos creados</h2>
         <div className="list">
           {eventos.length ? eventos.map((ev) => (
-            <div className="list-item" key={ev.id}>
+            <div className="list-item" key={ev.id} style={editId === ev.id ? { borderColor: "var(--accent)" } : null}>
               <div className="list-item__info"><strong>{ev.etiqueta}</strong><span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span></div>
+              <button className="btn btn--ghost btn--sm" onClick={() => editar(ev)}>Editar</button>
               <button className="icon-btn" onClick={() => borrar(ev.id)}>✕</button>
             </div>
           )) : <p className="empty">Todavía no creaste ningún evento.</p>}

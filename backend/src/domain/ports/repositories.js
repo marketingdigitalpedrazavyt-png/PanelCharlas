@@ -12,6 +12,7 @@ class UsuarioRepository {
 
 class EventoRepository {
   async crear(evento) { noimpl(); }
+  async actualizar(id, evento) { noimpl(); }
   async listar() { noimpl(); }
   async listarActivos() { noimpl(); }
   async buscarPorId(id) { noimpl(); }

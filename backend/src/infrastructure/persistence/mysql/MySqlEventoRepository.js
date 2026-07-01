@@ -29,6 +29,20 @@ class MySqlEventoRepository extends EventoRepository {
     return { ...evento, id: res.insertId };
   }
 
+  async actualizar(id, evento) {
+    // No toca "activo" (se preserva el estado actual)
+    const [res] = await pool.query(
+      `UPDATE eventos SET dia = :dia, hora = :hora, lugar = :lugar,
+              direccion = :direccion, barrio = :barrio, vendedor = :vendedor
+       WHERE id = :id`,
+      {
+        id, dia: evento.dia, hora: evento.hora, lugar: evento.lugar || null,
+        direccion: evento.direccion, barrio: evento.barrio, vendedor: evento.vendedor || null,
+      }
+    );
+    return res.affectedRows > 0 ? { ...evento, id: Number(id) } : null;
+  }
+
   async listar() {
     const [rows] = await pool.query("SELECT * FROM eventos ORDER BY dia, hora");
     return rows.map(map);

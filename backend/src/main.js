@@ -16,7 +16,7 @@ const { CanvasCredencialGenerator } = require("./infrastructure/credencial/Canva
 const { seedSuperadmin } = require("./infrastructure/seed/seedSuperadmin");
 
 const { LoginUsuario, CrearUsuario, ListarUsuarios } = require("./application/authUseCases");
-const { CrearEvento, ListarEventos, ListarEventosPublicos, EliminarEvento } = require("./application/eventoUseCases");
+const { CrearEvento, ActualizarEvento, ListarEventos, ListarEventosPublicos, EliminarEvento } = require("./application/eventoUseCases");
 const { CrearVendedor, ListarVendedores, EliminarVendedor, ResolverVendedor } = require("./application/vendedorUseCases");
 const {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, MarcarAsistencia, ObtenerCredencial,
@@ -49,6 +49,7 @@ async function main() {
     listarUsuarios: new ListarUsuarios({ usuarioRepo }),
 
     crearEvento: new CrearEvento({ eventoRepo }),
+    actualizarEvento: new ActualizarEvento({ eventoRepo }),
     listarEventos: new ListarEventos({ eventoRepo }),
     listarEventosPublicos: new ListarEventosPublicos({ eventoRepo }),
     eliminarEvento: new EliminarEvento({ eventoRepo }),

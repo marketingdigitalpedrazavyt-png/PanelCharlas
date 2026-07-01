@@ -33,6 +33,7 @@ function buildRouter(uc) {
 
   r.get("/eventos", auth, asyncH(async (req, res) => res.json(await uc.listarEventos.execute())));
   r.post("/eventos", auth, asyncH(async (req, res) => res.status(201).json(await uc.crearEvento.execute(req.body || {}))));
+  r.put("/eventos/:id", auth, asyncH(async (req, res) => res.json(await uc.actualizarEvento.execute(req.params.id, req.body || {}))));
   r.delete("/eventos/:id", auth, asyncH(async (req, res) => res.json(await uc.eliminarEvento.execute(req.params.id))));
 
   r.get("/vendedores", auth, asyncH(async (req, res) => res.json(await uc.listarVendedores.execute())));

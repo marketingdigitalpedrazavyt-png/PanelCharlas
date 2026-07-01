@@ -1,4 +1,5 @@
 const { crearEvento, etiquetaEvento } = require("../domain/model/Evento");
+const { NotFoundError } = require("../domain/errors");
 
 class CrearEvento {
   constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
@@ -6,6 +7,16 @@ class CrearEvento {
     const evento = crearEvento(input);
     const creado = await this.eventoRepo.crear(evento);
     return { ...creado, etiqueta: etiquetaEvento(creado) };
+  }
+}
+
+class ActualizarEvento {
+  constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
+  async execute(id, input) {
+    const evento = crearEvento(input); // reutiliza la validación del dominio
+    const actualizado = await this.eventoRepo.actualizar(id, evento);
+    if (!actualizado) throw new NotFoundError("No existe ese evento.");
+    return { ...actualizado, etiqueta: etiquetaEvento(actualizado) };
   }
 }
 
@@ -31,4 +42,4 @@ class EliminarEvento {
   async execute(id) { await this.eventoRepo.eliminar(id); return { ok: true }; }
 }
 
-module.exports = { CrearEvento, ListarEventos, ListarEventosPublicos, EliminarEvento };
+module.exports = { CrearEvento, ActualizarEvento, ListarEventos, ListarEventosPublicos, EliminarEvento };
