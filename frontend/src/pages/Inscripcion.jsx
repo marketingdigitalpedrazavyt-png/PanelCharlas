@@ -4,10 +4,11 @@ import "../styles/form.css";
 
 const onlyDigits = (s) => String(s || "").replace(/\D/g, "");
 function maskPhone(v) {
-  const d = onlyDigits(v).slice(0, 11);
+  const d = onlyDigits(v).slice(0, 13); // permite prefijo 15 (celular AR)
   if (d.length <= 2) return d;
   if (d.length <= 6) return d.slice(0, 2) + " " + d.slice(2);
-  return d.slice(0, 2) + " " + d.slice(2, 6) + " " + d.slice(6);
+  if (d.length <= 10) return d.slice(0, 2) + " " + d.slice(2, 6) + " " + d.slice(6);
+  return d.slice(0, 2) + " " + d.slice(2, 4) + " " + d.slice(4, 8) + " " + d.slice(8);
 }
 
 export default function Inscripcion() {
@@ -191,7 +192,7 @@ export default function Inscripcion() {
             </div>
             <div className="field-row">
               {field("dni", "DNI", { type: "text", placeholder: "Ej: 30123456", inputMode: "numeric" })}
-              {field("celular", "Celular", { type: "tel", placeholder: "11 5555 5555", inputMode: "tel", maxLength: 14 })}
+              {field("celular", "Celular", { type: "tel", placeholder: "11 15 5555 5555", inputMode: "tel", maxLength: 17 })}
             </div>
 
             <div className={"form-error" + (error ? " show" : "")} role="alert" aria-live="assertive">

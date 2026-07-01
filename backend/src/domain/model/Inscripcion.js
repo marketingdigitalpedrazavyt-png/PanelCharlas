@@ -43,13 +43,27 @@ function crearInscripcion({
 }
 
 /**
- * Normaliza a formato WhatsApp Argentina (mejor esfuerzo): 549 + area + número.
+ * Normaliza a formato WhatsApp Argentina (mejor esfuerzo): 549 + área + número.
+ * Contempla el prefijo "15" de celular (que se marca en modo local):
+ *   - "11 15 2390 1345" -> 549 11 2390 1345
+ *   - "15 2390 1345"    -> 549 11 2390 1345   (sin área: se asume CABA/11)
+ * También quita 54 (país), 0 (troncal) y 9 (celular internacional).
  */
 function celularAWhatsApp(celular) {
   let d = soloDigitos(celular);
-  if (d.startsWith("54")) d = d.slice(2);
-  if (d.startsWith("0")) d = d.slice(1);
-  if (d.startsWith("9")) d = d.slice(1);
+  if (d.startsWith("54")) d = d.slice(2);   // país
+  if (d.startsWith("0")) d = d.slice(1);    // troncal
+  if (d.startsWith("9")) d = d.slice(1);    // celular (formato internacional)
+
+  if (d.length === 10 && d.startsWith("15")) {
+    // Local sin código de área (se asume CABA / 11)
+    d = "11" + d.slice(2);
+  } else if (d.length === 11 || d.length === 12) {
+    // "15" incrustado tras el código de área (2, 3 o 4 dígitos): se remueve
+    for (const a of [2, 3, 4]) {
+      if (d.slice(a, a + 2) === "15") { d = d.slice(0, a) + d.slice(a + 2); break; }
+    }
+  }
   return "549" + d;
 }
 
