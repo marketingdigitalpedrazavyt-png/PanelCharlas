@@ -70,7 +70,7 @@ services:
     restart: unless-stopped
     depends_on: [backend]
     ports:
-      - "8080:80"          # http://localhost:8080  → formulario, /panel, /escaner
+      - "8081:80"          # http://localhost:8080  → formulario, /panel, /escaner
     networks: [interna]
 
 volumes:
