@@ -1,7 +1,7 @@
 # =========================================================
 #  Maravillas del Mediterráneo — Stack completo en Docker
 #  Servicios: mysql · backend (Express/hexagonal) · frontend
-#  (React+Vite servido por nginx) · waha (WhatsApp HTTP API)
+#  (React+Vite servido por nginx) · waha disponible para n8n
 # =========================================================
 services:
 
@@ -27,10 +27,10 @@ services:
     image: devlikeapro/waha:latest
     restart: unless-stopped
     environment:
-      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
       WHATSAPP_DEFAULT_ENGINE: WEBJS
     ports:
-      - "3000:3000"        # dashboard de WAHA para escanear el QR de WhatsApp
+      - "3000:3000"        # dashboard/API de WAHA para n8n
     volumes:
       - waha_sessions:/app/.sessions
     networks: [interna]
@@ -57,11 +57,14 @@ services:
       # --- Paquete / credencial ---
       PAQUETE_NOMBRE: ${PAQUETE_NOMBRE}
       PAQUETE_BAJADA: ${PAQUETE_BAJADA}
-      # --- WhatsApp (WAHA) ---
+      # --- WhatsApp por n8n ---
       WHATSAPP_ENABLED: ${WHATSAPP_ENABLED}
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+      WHATSAPP_SESSION: ${WHATSAPP_SESSION:-default}
+      N8N_BRIDGE_TOKEN: ${N8N_BRIDGE_TOKEN:-}
+      # --- WAHA disponible para el endpoint puente usado por n8n ---
       WAHA_URL: http://waha:3000
-      WAHA_API_KEY: ${WAHA_API_KEY}
-      WAHA_SESSION: default
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
     networks: [interna]
 
   frontend:

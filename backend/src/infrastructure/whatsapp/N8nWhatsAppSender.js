@@ -1,20 +1,20 @@
 const { WhatsAppSender } = require("../../domain/ports/services");
 
 /**
- * Adaptador de WhatsApp usando WAHA (https://waha.devlike.pro).
- * Envía la credencial como imagen a un número.
+ * Envia a n8n el payload de WhatsApp.
+ * El workflow de n8n queda a cargo de procesarlo y entregar el WhatsApp.
  */
-class WahaWhatsAppSender extends WhatsAppSender {
-  constructor({ url, apiKey, session }) {
+class N8nWhatsAppSender extends WhatsAppSender {
+  constructor({ webhookUrl, session }) {
     super();
-    this.url = String(url || "").replace(/\/+$/, "");
-    this.apiKey = apiKey;
+    this.webhookUrl = String(webhookUrl || "").trim();
     this.session = session || "default";
   }
 
   async enviarImagen({ celularWhatsApp, caption, png }) {
     const numero = String(celularWhatsApp || "").replace(/\D/g, "");
-    if (!numero) return { ok: false, error: "Número inválido." };
+    if (!numero) return { ok: false, error: "Numero invalido." };
+    if (!this.webhookUrl) return { ok: false, error: "N8N_WEBHOOK_URL no configurado." };
 
     const body = {
       session: this.session,
@@ -28,14 +28,14 @@ class WahaWhatsAppSender extends WhatsAppSender {
     };
 
     try {
-      const resp = await fetch(`${this.url}/api/sendImage`, {
+      const resp = await fetch(this.webhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Api-Key": this.apiKey },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!resp.ok) {
         const txt = await resp.text().catch(() => "");
-        return { ok: false, error: `WAHA ${resp.status} ${txt.slice(0, 200)}` };
+        return { ok: false, error: `n8n ${resp.status} ${txt.slice(0, 200)}` };
       }
       return { ok: true };
     } catch (e) {
@@ -44,4 +44,4 @@ class WahaWhatsAppSender extends WhatsAppSender {
   }
 }
 
-module.exports = { WahaWhatsAppSender };
+module.exports = { N8nWhatsAppSender };

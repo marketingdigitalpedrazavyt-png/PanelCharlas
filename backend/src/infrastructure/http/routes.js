@@ -1,5 +1,6 @@
 const { Router } = require("express");
 const { asyncH, requireAuth, requireSuper } = require("./middlewares");
+const { UnauthorizedError, ValidationError } = require("../../domain/errors");
 
 /**
  * Construye el router de la API a partir de los casos de uso ya cableados.
@@ -27,6 +28,9 @@ function buildRouter(uc) {
   // Escáner (abierto): marca asistencia
   r.post("/asistencia/:codigo", asyncH(async (req, res) => res.json(await uc.marcarAsistencia.execute(req.params.codigo))));
 
+  // Puente para n8n: recibe datos simples o payload WAHA y lo envia a WAHA.
+  r.post("/n8n/waha/send-image", asyncH((req, res) => enviarImagenWahaDesdeN8n(uc, req, res)));
+
   /* ---------- Protegido (staff logueado) ---------- */
   r.get("/inscripciones", auth, asyncH(async (req, res) => res.json(await uc.listarInscripciones.execute())));
   r.delete("/inscripciones/:codigo", auth, asyncH(async (req, res) => res.json(await uc.eliminarInscripcion.execute(req.params.codigo))));
@@ -52,6 +56,80 @@ async function enviarCredencial(uc, req, res, formato) {
   res.setHeader("Content-Type", mime);
   res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
   res.send(buffer);
+}
+
+async function enviarImagenWahaDesdeN8n(uc, req, res) {
+  validarTokenN8n(uc.config, req);
+  const payload = normalizarPayloadWaha(req.body || {}, uc.config);
+  const { url, apiKey } = uc.config.waha;
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers["X-Api-Key"] = apiKey;
+
+  const resp = await fetch(`${String(url).replace(/\/+$/, "")}/api/sendImage`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  const text = await resp.text().catch(() => "");
+  let data = text;
+  try { data = text ? JSON.parse(text) : null; } catch (e) {}
+
+  if (!resp.ok) {
+    return res.status(resp.status).json({ ok: false, error: data || text || `WAHA ${resp.status}` });
+  }
+
+  res.json({ ok: true, waha: data });
+}
+
+function validarTokenN8n(config, req) {
+  const esperado = config.n8n.bridgeToken;
+  if (!esperado) return;
+
+  const auth = req.headers.authorization || "";
+  const recibido = auth.startsWith("Bearer ") ? auth.slice(7) : req.headers["x-n8n-token"];
+  if (recibido !== esperado) throw new UnauthorizedError("Token n8n invalido.");
+}
+
+function normalizarPayloadWaha(input, config) {
+  if (input.chatId && input.file) return input;
+
+  const body = input.body && typeof input.body === "object" ? input.body : {};
+  const bodyText = typeof input.body === "string" ? input.body : "";
+  const numeroRaw = input.numero || input.celular || input.phone || input.to || body.numero || body.celular || body.phone || body.to;
+  const numero = String(numeroRaw || "").replace(/\D/g, "");
+  if (!numero) throw new ValidationError("Falta numero/celular valido.");
+
+  const imagen = input.imagen || input.image || input.file || body.imagen || body.image || body.file;
+  const file = normalizarImagen(imagen);
+  if (!file.data) throw new ValidationError("Falta imagen en base64.");
+
+  return {
+    session: input.session || body.session || config.n8n.session,
+    chatId: input.chatId || body.chatId || `${numero}@c.us`,
+    caption: input.caption || input.mensaje || input.message || body.caption || body.mensaje || body.message || bodyText || "",
+    file,
+  };
+}
+
+function normalizarImagen(imagen) {
+  if (imagen && typeof imagen === "object") {
+    return {
+      mimetype: imagen.mimetype || imagen.mimeType || "image/png",
+      filename: imagen.filename || imagen.fileName || "credencial.png",
+      data: limpiarBase64(imagen.data || imagen.base64 || ""),
+    };
+  }
+
+  return {
+    mimetype: "image/png",
+    filename: "credencial.png",
+    data: limpiarBase64(imagen || ""),
+  };
+}
+
+function limpiarBase64(valor) {
+  return String(valor || "").replace(/^data:[^;]+;base64,/, "");
 }
 
 module.exports = { buildRouter };

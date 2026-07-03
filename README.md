@@ -1,4 +1,4 @@
-# Maravillas del Mediterráneo — Stack Docker (React + Express + MySQL + WAHA)
+# Maravillas del Mediterráneo — Stack Docker (React + Express + MySQL + n8n + WAHA)
 
 Sistema de inscripción a charlas con credencial (boarding pass + QR), panel de
 administración, escáner de ingreso y envío de la credencial por WhatsApp.
@@ -14,7 +14,12 @@ administración, escáner de ingreso y envío de la credencial por WhatsApp.
      :8080              └─────┬─────┘
                               │ HTTP
                         ┌─────▼─────┐
-                        │   WAHA    │  (WhatsApp HTTP API)
+                        │   n8n     │  (Webhook WhatsApp)
+                        │  webhook  │
+                        └─────┬─────┘
+                              │ HTTP
+                        ┌─────▼─────┐
+                        │   WAHA    │  (WhatsApp API)
                         │   :3000   │
                         └───────────┘
 ```
@@ -25,7 +30,7 @@ administración, escáner de ingreso y envío de la credencial por WhatsApp.
   - `domain/` — entidades + puertos (sin framework).
   - `application/` — casos de uso.
   - `infrastructure/` — adaptadores: `persistence/mysql` (mysql2), `auth` (JWT+bcrypt),
-    `whatsapp` (WAHA), `credencial` (@napi-rs/canvas + qrcode + pdfkit), `http` (Express).
+    `whatsapp` (n8n webhook), `credencial` (@napi-rs/canvas + qrcode + pdfkit), `http` (Express).
   - `main.js` — composition root (wiring).
 - **db/init.sql** — esquema MySQL (el superadmin lo siembra el backend al arrancar).
 
@@ -35,7 +40,7 @@ administración, escáner de ingreso y envío de la credencial por WhatsApp.
 2. Copiá el archivo de entorno y completá los valores:
    ```bash
    cp .env.example .env
-   # editá .env: contraseñas de MySQL, JWT_SECRET, SUPERADMIN_*, WAHA_API_KEY…
+   # editá .env: contraseñas de MySQL, JWT_SECRET, SUPERADMIN_*, N8N_WEBHOOK_URL…
    ```
 3. Levantá todo:
    ```bash
@@ -45,8 +50,7 @@ administración, escáner de ingreso y envío de la credencial por WhatsApp.
    - **Formulario:** http://localhost:8080/
    - **Panel:** http://localhost:8080/panel  → login con `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` (del `.env`).
    - **Escáner:** http://localhost:8080/escaner
-   - **WAHA (para WhatsApp):** http://localhost:3000
-
+   - **WAHA:** http://localhost:3000
 > El superadmin se crea/actualiza solo al arrancar el backend, con los datos del `.env`.
 
 ## Flujo de uso
@@ -57,13 +61,47 @@ administración, escáner de ingreso y envío de la credencial por WhatsApp.
 4. En el evento, el **escáner** lee el QR y marca asistencia.
 5. En **Inscriptos** ves todo, filtrás, exportás **CSV/Excel**, bajás el **PDF** de cada uno o borrás.
 
-## WhatsApp (WAHA)
-1. Poné `WHATSAPP_ENABLED=true` en `.env` y un `WAHA_API_KEY`.
-2. Entrá a **http://localhost:3000**, iniciá la sesión `default` y **escaneá el QR** con el
-   WhatsApp del que va a enviar (como WhatsApp Web).
-3. Listo: cada inscripción dispara el envío de la credencial al celular cargado.
+## WhatsApp por n8n
+1. Pone `WHATSAPP_ENABLED=true` en `.env`.
+2. Configura `N8N_WEBHOOK_URL` con la URL del webhook de n8n que recibira la credencial.
+3. En n8n, usa el payload recibido para llamar a WAHA.
+4. Listo: cada inscripción dispara un POST al webhook; Express no envia mensajes directo a WAHA.
 
-> WAHA maneja WhatsApp por la vía no oficial (WhatsApp Web). Usá un número dedicado.
+### Endpoint puente n8n → WAHA
+Desde n8n podes llamar al backend para que normalice el payload y lo envie a WAHA:
+
+```http
+POST http://backend:4000/api/n8n/waha/send-image
+Content-Type: application/json
+Authorization: Bearer N8N_BRIDGE_TOKEN
+```
+
+El header de autorizacion es obligatorio solo si configuraste `N8N_BRIDGE_TOKEN`.
+
+Objeto simple aceptado:
+
+```json
+{
+  "numero": "5491123456789",
+  "imagen": "BASE64_DE_LA_IMAGEN",
+  "body": "Texto del mensaje"
+}
+```
+
+Tambien acepta el payload WAHA completo:
+
+```json
+{
+  "session": "default",
+  "chatId": "5491123456789@c.us",
+  "caption": "Texto del mensaje",
+  "file": {
+    "mimetype": "image/png",
+    "filename": "credencial.png",
+    "data": "BASE64_DE_LA_IMAGEN"
+  }
+}
+```
 
 ## Producción / HTTPS
 - La **cámara del escáner exige HTTPS** (salvo en `localhost`). En un servidor real, poné un

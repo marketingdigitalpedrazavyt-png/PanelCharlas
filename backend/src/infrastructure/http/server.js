@@ -7,7 +7,7 @@ const { errorHandler } = require("./middlewares");
 function createServer(uc) {
   const app = express();
   app.use(cors());
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json({ limit: "15mb" }));
   app.use("/api", buildRouter(uc));
   app.use(errorHandler);
   return app;

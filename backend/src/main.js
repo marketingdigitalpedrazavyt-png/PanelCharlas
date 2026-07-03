@@ -11,7 +11,7 @@ const { MySqlInscripcionRepository } = require("./infrastructure/persistence/mys
 
 const { BcryptPasswordHasher } = require("./infrastructure/auth/BcryptPasswordHasher");
 const { JwtTokenService } = require("./infrastructure/auth/JwtTokenService");
-const { WahaWhatsAppSender } = require("./infrastructure/whatsapp/WahaWhatsAppSender");
+const { N8nWhatsAppSender } = require("./infrastructure/whatsapp/N8nWhatsAppSender");
 const { CanvasCredencialGenerator } = require("./infrastructure/credencial/CanvasCredencialGenerator");
 const { seedSuperadmin } = require("./infrastructure/seed/seedSuperadmin");
 
@@ -34,7 +34,7 @@ async function main() {
   const inscripcionRepo = new MySqlInscripcionRepository();
   const hasher = new BcryptPasswordHasher();
   const tokens = new JwtTokenService(config.jwtSecret);
-  const whatsapp = new WahaWhatsAppSender(config.waha);
+  const whatsapp = new N8nWhatsAppSender(config.n8n);
   const credencial = new CanvasCredencialGenerator({
     paqueteNombre: config.paqueteNombre, paqueteBajada: config.paqueteBajada,
   });
@@ -43,6 +43,7 @@ async function main() {
 
   // Casos de uso (application)
   const uc = {
+    config,
     tokens,
     login: new LoginUsuario({ usuarioRepo, hasher, tokens }),
     crearUsuario: new CrearUsuario({ usuarioRepo, hasher }),

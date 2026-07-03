@@ -20,9 +20,13 @@ module.exports = {
   paqueteBajada: process.env.PAQUETE_BAJADA || "Charla informativa exclusiva",
 
   whatsappEnabled: String(process.env.WHATSAPP_ENABLED || "false") === "true",
+  n8n: {
+    webhookUrl: process.env.N8N_WEBHOOK_URL || "",
+    session: process.env.WHATSAPP_SESSION || "default",
+    bridgeToken: process.env.N8N_BRIDGE_TOKEN || "",
+  },
   waha: {
     url: process.env.WAHA_URL || "http://waha:3000",
     apiKey: process.env.WAHA_API_KEY || "",
-    session: process.env.WAHA_SESSION || "default",
   },
 };
