@@ -30,6 +30,7 @@ function buildRouter(uc) {
 
   // Puente para n8n: recibe datos simples o payload WAHA y lo envia a WAHA.
   r.post("/n8n/waha/send-image", asyncH((req, res) => enviarImagenWahaDesdeN8n(uc, req, res)));
+  r.post("/n8n/waha/send-text", asyncH((req, res) => enviarTextoWahaDesdeN8n(uc, req, res)));
 
   /* ---------- Protegido (staff logueado) ---------- */
   r.get("/inscripciones", auth, asyncH(async (req, res) => res.json(await uc.listarInscripciones.execute())));
@@ -61,11 +62,21 @@ async function enviarCredencial(uc, req, res, formato) {
 async function enviarImagenWahaDesdeN8n(uc, req, res) {
   validarTokenN8n(uc.config, req);
   const payload = normalizarPayloadWaha(req.body || {}, uc.config);
-  const { url, apiKey } = uc.config.waha;
+  responderWaha(res, await postWaha(uc.config, "/api/sendImage", payload));
+}
+
+async function enviarTextoWahaDesdeN8n(uc, req, res) {
+  validarTokenN8n(uc.config, req);
+  const payload = normalizarPayloadTextoWaha(req.body || {}, uc.config);
+  responderWaha(res, await postWaha(uc.config, "/api/sendText", payload));
+}
+
+async function postWaha(config, path, payload) {
+  const { url, apiKey } = config.waha;
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["X-Api-Key"] = apiKey;
 
-  const resp = await fetch(`${String(url).replace(/\/+$/, "")}/api/sendImage`, {
+  const resp = await fetch(`${String(url).replace(/\/+$/, "")}${path}`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -76,10 +87,15 @@ async function enviarImagenWahaDesdeN8n(uc, req, res) {
   try { data = text ? JSON.parse(text) : null; } catch (e) {}
 
   if (!resp.ok) {
-    return res.status(resp.status).json({ ok: false, error: data || text || `WAHA ${resp.status}` });
+    return { ok: false, status: resp.status, error: data || text || `WAHA ${resp.status}` };
   }
 
-  res.json({ ok: true, waha: data });
+  return { ok: true, status: resp.status, waha: data };
+}
+
+function responderWaha(res, result) {
+  if (!result.ok) return res.status(result.status || 502).json(result);
+  return res.json(result);
 }
 
 function validarTokenN8n(config, req) {
@@ -109,6 +125,25 @@ function normalizarPayloadWaha(input, config) {
     chatId: input.chatId || body.chatId || `${numero}@c.us`,
     caption: input.caption || input.mensaje || input.message || body.caption || body.mensaje || body.message || bodyText || "",
     file,
+  };
+}
+
+function normalizarPayloadTextoWaha(input, config) {
+  if (input.chatId && input.text) return input;
+
+  const body = input.body && typeof input.body === "object" ? input.body : {};
+  const bodyText = typeof input.body === "string" ? input.body : "";
+  const numeroRaw = input.numero || input.celular || input.phone || input.to || body.numero || body.celular || body.phone || body.to;
+  const numero = String(numeroRaw || "").replace(/\D/g, "");
+  if (!numero) throw new ValidationError("Falta numero/celular valido.");
+
+  const text = input.text || input.mensaje || input.message || body.text || body.mensaje || body.message || bodyText;
+  if (!text) throw new ValidationError("Falta texto del mensaje.");
+
+  return {
+    session: input.session || body.session || config.n8n.session,
+    chatId: input.chatId || body.chatId || `${numero}@c.us`,
+    text,
   };
 }
 
