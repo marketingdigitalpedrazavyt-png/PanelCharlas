@@ -24,7 +24,7 @@ services:
     networks: [interna]
 
   waha:
-    image: devlikeapro/waha:latest
+    image: devlikeapro/waha:latest-2026.6.2
     restart: unless-stopped
     environment:
       WAHA_API_KEY: ${WAHA_API_KEY:-}
