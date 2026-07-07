@@ -16,7 +16,7 @@ function generarCodigo() {
  */
 function crearInscripcion({
   id = null, codigo = null, nombre, apellido, dni, celular, cjp,
-  eventoId, evento = null, vendedorSlug = null, vendedorNombre = "Directo",
+  eventoId, vendedorSlug = null, vendedorNombre = "Directo",
   asistio = false, asistioAt = null,
 }) {
   nombre = String(nombre || "").trim();
@@ -37,14 +37,6 @@ function crearInscripcion({
     codigo: codigo || generarCodigo(),
     nombre, apellido, dni, celular, cjp,
     eventoId,
-    // Snapshot del evento (persiste aunque el evento se borre después)
-    evento: {
-      dia: (evento && evento.dia) || "",
-      hora: (evento && evento.hora) || "",
-      lugar: (evento && evento.lugar) || "",
-      direccion: (evento && evento.direccion) || "",
-      barrio: (evento && evento.barrio) || "",
-    },
     vendedorSlug: vendedorSlug || null,
     vendedorNombre: vendedorNombre || "Directo",
     asistio: !!asistio,
