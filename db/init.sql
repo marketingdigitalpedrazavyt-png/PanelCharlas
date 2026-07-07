@@ -48,6 +48,12 @@ CREATE TABLE IF NOT EXISTS inscripciones (
   celular         VARCHAR(20) NOT NULL,
   cjp             VARCHAR(120) NOT NULL DEFAULT '',
   evento_id       BIGINT UNSIGNED NULL,
+  -- Snapshot del evento al momento de inscribirse (persiste aunque el evento se borre)
+  evento_dia       VARCHAR(10)  NOT NULL DEFAULT '',
+  evento_hora      VARCHAR(5)   NOT NULL DEFAULT '',
+  evento_lugar     VARCHAR(190) NOT NULL DEFAULT '',
+  evento_direccion VARCHAR(255) NOT NULL DEFAULT '',
+  evento_barrio    VARCHAR(120) NOT NULL DEFAULT '',
   vendedor_slug   VARCHAR(60) NULL,
   vendedor_nombre VARCHAR(160) NOT NULL DEFAULT 'Directo',
   asistio         TINYINT(1) NOT NULL DEFAULT 0,

@@ -32,6 +32,10 @@ class CrearInscripcion {
 
     const inscripcion = crearInscripcion({
       nombre, apellido, dni, celular, cjp, eventoId: evento.id,
+      evento: {
+        dia: evento.dia, hora: evento.hora, lugar: evento.lugar,
+        direccion: evento.direccion, barrio: evento.barrio,
+      },
       vendedorSlug: slug, vendedorNombre,
     });
     const creada = await this.inscripcionRepo.crear(inscripcion); // puede lanzar ConflictError

@@ -2,9 +2,17 @@ const { InscripcionRepository } = require("../../../domain/ports/repositories");
 const { ConflictError } = require("../../../domain/errors");
 const { pool } = require("./pool");
 
-/** Mapea una fila del JOIN inscripciones + eventos a un DTO. */
+/** Mapea una fila a un DTO. El evento sale del SNAPSHOT guardado en la
+ *  inscripción (persiste aunque el evento se borre); si está vacío
+ *  (inscripciones viejas), cae al JOIN con la tabla eventos. */
 function map(row) {
   if (!row) return null;
+  const dia = row.evento_dia || row.e_dia || "";
+  const hora = row.evento_hora || row.e_hora || "";
+  const lugar = row.evento_lugar || row.e_lugar || "";
+  const direccion = row.evento_direccion || row.e_direccion || "";
+  const barrio = row.evento_barrio || row.e_barrio || "";
+  const hayEvento = dia || hora || lugar || direccion || barrio || row.evento_id;
   return {
     codigo: row.codigo,
     nombre: row.nombre,
@@ -17,12 +25,7 @@ function map(row) {
     asistio: !!row.asistio,
     asistioAt: row.asistio_at || null,
     createdAt: row.created_at,
-    evento: row.evento_id
-      ? {
-          id: row.evento_id, dia: row.e_dia, hora: row.e_hora, lugar: row.e_lugar || "",
-          direccion: row.e_direccion, barrio: row.e_barrio,
-        }
-      : null,
+    evento: hayEvento ? { id: row.evento_id || null, dia, hora, lugar, direccion, barrio } : null,
   };
 }
 
@@ -35,14 +38,21 @@ const SELECT_JOIN = `
 class MySqlInscripcionRepository extends InscripcionRepository {
   async crear(insc) {
     try {
+      const ev = insc.evento || {};
       const [res] = await pool.query(
         `INSERT INTO inscripciones
-           (codigo, nombre, apellido, dni, celular, cjp, evento_id, vendedor_slug, vendedor_nombre, asistio)
-         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :cjp, :eventoId, :vendedorSlug, :vendedorNombre, 0)`,
+           (codigo, nombre, apellido, dni, celular, cjp, evento_id,
+            evento_dia, evento_hora, evento_lugar, evento_direccion, evento_barrio,
+            vendedor_slug, vendedor_nombre, asistio)
+         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :cjp, :eventoId,
+            :edia, :ehora, :elugar, :edireccion, :ebarrio,
+            :vendedorSlug, :vendedorNombre, 0)`,
         {
           codigo: insc.codigo, nombre: insc.nombre, apellido: insc.apellido,
           dni: insc.dni, celular: insc.celular, cjp: insc.cjp || "",
           eventoId: insc.eventoId,
+          edia: ev.dia || "", ehora: ev.hora || "", elugar: ev.lugar || "",
+          edireccion: ev.direccion || "", ebarrio: ev.barrio || "",
           vendedorSlug: insc.vendedorSlug, vendedorNombre: insc.vendedorNombre,
         }
       );
