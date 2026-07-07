@@ -2,12 +2,14 @@ const { crearEvento, etiquetaEvento } = require("../domain/model/Evento");
 const { NotFoundError } = require("../domain/errors");
 
 /**
- * ¿El evento todavía no pasó? Se interpreta su día + hora en horario de
- * Argentina (UTC-3) y se compara contra el instante actual.
+ * ¿El evento todavía es seleccionable? Se interpreta su día + hora en horario
+ * de Argentina (UTC-3) y se le da 20 min de margen desde el inicio (para
+ * inscripciones en la puerta). Pasado ese margen, se oculta del formulario.
  */
+const MARGEN_MS = 20 * 60 * 1000; // 20 minutos
 function eventoVigente(evento) {
   const t = Date.parse(`${evento.dia}T${evento.hora || "00:00"}:00-03:00`);
-  return Number.isNaN(t) ? true : t >= Date.now();
+  return Number.isNaN(t) ? true : (t + MARGEN_MS) >= Date.now();
 }
 
 class CrearEvento {
