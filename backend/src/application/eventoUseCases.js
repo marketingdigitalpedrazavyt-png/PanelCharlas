@@ -1,6 +1,15 @@
 const { crearEvento, etiquetaEvento } = require("../domain/model/Evento");
 const { NotFoundError } = require("../domain/errors");
 
+/**
+ * ¿El evento todavía no pasó? Se interpreta su día + hora en horario de
+ * Argentina (UTC-3) y se compara contra el instante actual.
+ */
+function eventoVigente(evento) {
+  const t = Date.parse(`${evento.dia}T${evento.hora || "00:00"}:00-03:00`);
+  return Number.isNaN(t) ? true : t >= Date.now();
+}
+
 class CrearEvento {
   constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
   async execute(input) {
@@ -28,12 +37,15 @@ class ListarEventos {
   }
 }
 
-/** Solo los activos, para el desplegable del formulario público. */
+/** Activos y NO vencidos (día+hora futuros, hora Argentina), para el
+ *  desplegable del formulario público. Los que ya pasaron no aparecen. */
 class ListarEventosPublicos {
   constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
   async execute() {
     const eventos = await this.eventoRepo.listarActivos();
-    return eventos.map((e) => ({ id: e.id, etiqueta: etiquetaEvento(e) }));
+    return eventos
+      .filter(eventoVigente)
+      .map((e) => ({ id: e.id, etiqueta: etiquetaEvento(e) }));
   }
 }
 
