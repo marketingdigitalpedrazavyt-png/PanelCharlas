@@ -253,7 +253,16 @@ function EventosTab({ eventos, onChange }) {
   const [f, setF] = useState(VACIO);
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  const eventosFiltrados = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return eventos;
+    return eventos.filter((ev) =>
+      `${ev.etiqueta} ${ev.lugar || ""} ${ev.direccion || ""} ${ev.barrio || ""} ${ev.vendedor || ""}`.toLowerCase().includes(t)
+    );
+  }, [eventos, q]);
 
   function editar(ev) {
     setEditId(ev.id);
@@ -300,14 +309,19 @@ function EventosTab({ eventos, onChange }) {
       </div>
       <div className="card">
         <h2>Eventos creados</h2>
+        {eventos.length > 0 && (
+          <div className="toolbar">
+            <input className="input" type="search" placeholder="Buscar por lugar, dirección, barrio o vendedor…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+        )}
         <div className="list">
-          {eventos.length ? eventos.map((ev) => (
+          {eventosFiltrados.length ? eventosFiltrados.map((ev) => (
             <div className="list-item" key={ev.id} style={editId === ev.id ? { borderColor: "rgba(255,255,255,0.5)" } : null}>
               <div className="list-item__info"><strong>{ev.etiqueta}</strong><span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span></div>
               <button className="btn btn--ghost btn--sm" onClick={() => editar(ev)}>Editar</button>
               <button className="icon-btn" onClick={() => borrar(ev.id)}>✕</button>
             </div>
-          )) : <p className="empty">Todavía no creaste ningún evento.</p>}
+          )) : <p className="empty">{eventos.length ? "Sin resultados." : "Todavía no creaste ningún evento."}</p>}
         </div>
       </div>
     </div>
@@ -318,6 +332,13 @@ function EventosTab({ eventos, onChange }) {
 function VendedoresTab({ vendedores, linkBase, onChange }) {
   const [f, setF] = useState({ nombre: "", slug: "" });
   const [error, setError] = useState("");
+  const [q, setQ] = useState("");
+
+  const vendedoresFiltrados = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return vendedores;
+    return vendedores.filter((v) => `${v.nombre} ${v.slug}`.toLowerCase().includes(t));
+  }, [vendedores, q]);
   async function crear(e) {
     e.preventDefault(); setError("");
     try { await api.crearVendedor(f); setF({ nombre: "", slug: "" }); onChange(); }
@@ -341,8 +362,13 @@ function VendedoresTab({ vendedores, linkBase, onChange }) {
       </div>
       <div className="card">
         <h2>Vendedores y sus links</h2>
+        {vendedores.length > 0 && (
+          <div className="toolbar">
+            <input className="input" type="search" placeholder="Buscar por nombre o código de link…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+        )}
         <div className="list">
-          {vendedores.length ? vendedores.map((v) => {
+          {vendedoresFiltrados.length ? vendedoresFiltrados.map((v) => {
             const link = `${linkBase}?v=${encodeURIComponent(v.slug)}`;
             return (
               <div className="list-item" key={v.id}>
@@ -351,7 +377,7 @@ function VendedoresTab({ vendedores, linkBase, onChange }) {
                 <button className="icon-btn" onClick={() => borrar(v.id)}>✕</button>
               </div>
             );
-          }) : <p className="empty">Todavía no creaste ningún vendedor.</p>}
+          }) : <p className="empty">{vendedores.length ? "Sin resultados." : "Todavía no creaste ningún vendedor."}</p>}
         </div>
       </div>
     </div>
