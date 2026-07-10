@@ -58,6 +58,32 @@ class MySqlInscripcionRepository extends InscripcionRepository {
     }
   }
 
+  async actualizar(codigo, datos) {
+    const existe = await this.buscarPorCodigo(codigo);
+    if (!existe) return null;
+    try {
+      await pool.query(
+        `UPDATE inscripciones
+            SET nombre = :nombre, apellido = :apellido, dni = :dni,
+                celular = :celular, cjp = :cjp, evento_id = :eventoId
+          WHERE codigo = :codigo`,
+        {
+          codigo, nombre: datos.nombre, apellido: datos.apellido, dni: datos.dni,
+          celular: datos.celular, cjp: datos.cjp || "", eventoId: datos.eventoId,
+        }
+      );
+    } catch (e) {
+      if (e && e.code === "ER_DUP_ENTRY") {
+        const m = String(e.message || "");
+        if (m.includes("uq_evento_dni")) throw new ConflictError("Ese DNI ya está inscripto en este evento.");
+        if (m.includes("uq_evento_celular")) throw new ConflictError("Ese celular ya está inscripto en este evento.");
+        throw new ConflictError("Datos duplicados.");
+      }
+      throw e;
+    }
+    return this.buscarPorCodigo(codigo);
+  }
+
   async listar() {
     const [rows] = await pool.query(`${SELECT_JOIN} ORDER BY i.created_at DESC`);
     return rows.map(map);

@@ -72,6 +72,28 @@ class EliminarInscripcion {
   }
 }
 
+/** Edita los datos de un inscripto (no cambia código ni asistencia). */
+class ActualizarInscripcion {
+  constructor({ inscripcionRepo, eventoRepo }) {
+    this.inscripcionRepo = inscripcionRepo; this.eventoRepo = eventoRepo;
+  }
+  async execute(codigo, input) {
+    const evento = await this.eventoRepo.buscarPorId(input.eventoId);
+    if (!evento) throw new ValidationError("El evento elegido no existe.");
+    // Reutiliza la validación del dominio (limpia dni/celular, valida cjp, etc.)
+    const v = crearInscripcion({
+      nombre: input.nombre, apellido: input.apellido, dni: input.dni,
+      celular: input.celular, cjp: input.cjp, eventoId: evento.id,
+    });
+    const actualizada = await this.inscripcionRepo.actualizar(codigo, {
+      nombre: v.nombre, apellido: v.apellido, dni: v.dni,
+      celular: v.celular, cjp: v.cjp, eventoId: evento.id,
+    });
+    if (!actualizada) throw new NotFoundError("No existe esa inscripción.");
+    return { ...actualizada, eventoLabel: actualizada.evento ? etiquetaEvento(actualizada.evento) : "" };
+  }
+}
+
 /** Usado por el escáner (abierto). */
 class MarcarAsistencia {
   constructor({ inscripcionRepo }) { this.inscripcionRepo = inscripcionRepo; }
@@ -91,5 +113,6 @@ class ObtenerCredencial {
 }
 
 module.exports = {
-  CrearInscripcion, ListarInscripciones, EliminarInscripcion, MarcarAsistencia, ObtenerCredencial,
+  CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
+  MarcarAsistencia, ObtenerCredencial,
 };

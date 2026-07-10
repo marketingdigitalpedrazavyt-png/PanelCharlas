@@ -28,6 +28,7 @@ class VendedorRepository {
 
 class InscripcionRepository {
   async crear(inscripcion) { noimpl(); }        // devuelve la fila creada
+  async actualizar(codigo, datos) { noimpl(); } // edita datos de un inscripto
   async listar(filtros) { noimpl(); }           // con datos del evento (join)
   async buscarPorCodigo(codigo) { noimpl(); }
   async marcarAsistencia(codigo) { noimpl(); }  // false→true; devuelve estado

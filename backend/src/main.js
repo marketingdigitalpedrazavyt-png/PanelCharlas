@@ -19,7 +19,8 @@ const { LoginUsuario, CrearUsuario, ListarUsuarios } = require("./application/au
 const { CrearEvento, ActualizarEvento, ListarEventos, ListarEventosPublicos, EliminarEvento } = require("./application/eventoUseCases");
 const { CrearVendedor, ListarVendedores, EliminarVendedor, ResolverVendedor } = require("./application/vendedorUseCases");
 const {
-  CrearInscripcion, ListarInscripciones, EliminarInscripcion, MarcarAsistencia, ObtenerCredencial,
+  CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
+  MarcarAsistencia, ObtenerCredencial,
 } = require("./application/inscripcionUseCases");
 
 const { createServer } = require("./infrastructure/http/server");
@@ -63,6 +64,7 @@ async function main() {
     crearInscripcion: new CrearInscripcion({ inscripcionRepo, eventoRepo, vendedorRepo, credencial, whatsapp, config }),
     listarInscripciones: new ListarInscripciones({ inscripcionRepo }),
     eliminarInscripcion: new EliminarInscripcion({ inscripcionRepo }),
+    actualizarInscripcion: new ActualizarInscripcion({ inscripcionRepo, eventoRepo }),
     marcarAsistencia: new MarcarAsistencia({ inscripcionRepo }),
     obtenerCredencial: new ObtenerCredencial({ inscripcionRepo, credencial }),
   };

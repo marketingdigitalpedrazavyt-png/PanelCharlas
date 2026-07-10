@@ -28,6 +28,11 @@ export default function Panel() {
   const [fEvento, setFEvento] = useState("");
   const [fVendedor, setFVendedor] = useState("");
 
+  // edición de inscripto
+  const [editando, setEditando] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editError, setEditError] = useState("");
+
   const esSuper = user?.rol === "superadmin";
   const linkBase = window.location.origin + "/";
 
@@ -69,7 +74,9 @@ export default function Panel() {
     });
   }, [inscriptos, search, fEvento, fVendedor]);
 
-  const asis = inscriptos.filter((i) => i.asistio).length;
+  // Stats reflejan el filtro/búsqueda activos (ej: al filtrar por evento, el total es el de ese evento)
+  const asis = filtrados.filter((i) => i.asistio).length;
+  const hayFiltro = !!(fEvento || fVendedor || search.trim());
 
   function filasExport() {
     return filtrados.map((r) => ({
@@ -96,6 +103,25 @@ export default function Panel() {
     if (!confirm("¿Eliminar este inscripto? Se borra del panel y de la base de datos.")) return;
     try { await api.eliminarInscripcion(codigo); setInscriptos((l) => l.filter((i) => i.codigo !== codigo)); }
     catch (e) { alert("No se pudo eliminar."); }
+  }
+
+  function abrirEdicion(r) {
+    setEditando(r);
+    setEditForm({ nombre: r.nombre, apellido: r.apellido, dni: r.dni, celular: r.celular, cjp: r.cjp || "", eventoId: r.evento?.id || "" });
+    setEditError("");
+  }
+  const setEd = (k) => (e) => setEditForm({ ...editForm, [k]: e.target.value });
+  async function guardarEdicion(e) {
+    e.preventDefault(); setEditError("");
+    if (!editForm.eventoId) return setEditError("Elegí un evento.");
+    try {
+      await api.actualizarInscripcion(editando.codigo, {
+        nombre: editForm.nombre, apellido: editForm.apellido, dni: editForm.dni,
+        celular: editForm.celular, cjp: editForm.cjp, eventoId: Number(editForm.eventoId),
+      });
+      setEditando(null);
+      cargarTodo();
+    } catch (err) { setEditError(err.message); }
   }
 
   if (!authChecked) return <div className="login"><div className="login-card">Cargando…</div></div>;
@@ -142,9 +168,9 @@ export default function Panel() {
       {tab === "inscriptos" && (
         <div className="tab-panel is-active">
           <div className="stats">
-            <div className="stat stat--accent"><b>{inscriptos.length}</b><span>Inscriptos</span></div>
+            <div className="stat stat--accent"><b>{filtrados.length}</b><span>{hayFiltro ? "Inscriptos (filtrado)" : "Inscriptos"}</span></div>
             <div className="stat"><b>{asis}</b><span>Asistieron</span></div>
-            <div className="stat"><b>{inscriptos.length - asis}</b><span>Pendientes</span></div>
+            <div className="stat"><b>{filtrados.length - asis}</b><span>Pendientes</span></div>
             <div className="stat"><b>{eventos.filter((e) => e.activo).length}</b><span>Eventos activos</span></div>
           </div>
           <div className="toolbar">
@@ -171,6 +197,7 @@ export default function Panel() {
                     <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
                     <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
                     <td><div className="td-actions">
+                      <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(r)}>Editar</button>
                       <a className="btn btn--ghost btn--sm" href={api.credencialPdf(r.codigo)} target="_blank" rel="noreferrer">PDF</a>
                       <button className="btn btn--danger btn--sm" onClick={() => borrarInscripto(r.codigo)}>Borrar</button>
                     </div></td>
@@ -180,6 +207,36 @@ export default function Panel() {
             </table>
           </div>
           {!filtrados.length && <p className="empty">{inscriptos.length ? "Sin resultados." : "Sin inscriptos todavía."}</p>}
+        </div>
+      )}
+
+      {editando && (
+        <div className="modal-ov" onClick={(e) => { if (e.target === e.currentTarget) setEditando(null); }}>
+          <form className="modal-box" onSubmit={guardarEdicion}>
+            <h2>Editar inscripto</h2>
+            <div className="form-grid">
+              <div className="form-2">
+                <label>Nombre <span className="req">*</span><input className="input" value={editForm.nombre} onChange={setEd("nombre")} /></label>
+                <label>Apellido <span className="req">*</span><input className="input" value={editForm.apellido} onChange={setEd("apellido")} /></label>
+              </div>
+              <div className="form-2">
+                <label>DNI <span className="req">*</span><input className="input" value={editForm.dni} onChange={setEd("dni")} /></label>
+                <label>Celular <span className="req">*</span><input className="input" value={editForm.celular} onChange={setEd("celular")} /></label>
+              </div>
+              <label>CJP <span className="req">*</span><input className="input" value={editForm.cjp} onChange={setEd("cjp")} /></label>
+              <label>Evento <span className="req">*</span>
+                <select className="input" value={editForm.eventoId} onChange={setEd("eventoId")}>
+                  <option value="">Elegí un evento…</option>
+                  {eventos.map((ev) => <option key={ev.id} value={ev.id}>{ev.etiqueta}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="msg-error">{editError}</p>
+            <div className="modal-actions">
+              <button className="btn btn--primary" type="submit">Guardar cambios</button>
+              <button className="btn btn--ghost" type="button" onClick={() => setEditando(null)}>Cancelar</button>
+            </div>
+          </form>
         </div>
       )}
 

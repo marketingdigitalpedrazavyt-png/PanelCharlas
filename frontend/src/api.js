@@ -34,6 +34,7 @@ export const api = {
 
   // --- panel (staff) ---
   listarInscripciones: () => req("/inscripciones", { auth: true }),
+  actualizarInscripcion: (codigo, b) => req("/inscripciones/" + encodeURIComponent(codigo), { method: "PUT", body: b, auth: true }),
   eliminarInscripcion: (codigo) => req("/inscripciones/" + encodeURIComponent(codigo), { method: "DELETE", auth: true }),
   listarEventos: () => req("/eventos", { auth: true }),
   crearEvento: (b) => req("/eventos", { method: "POST", body: b, auth: true }),
