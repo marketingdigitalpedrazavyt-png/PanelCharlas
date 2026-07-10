@@ -29,7 +29,7 @@ function crearInscripcion({
   if (apellido.length < 2) throw new ValidationError("Ingresá tu apellido.");
   if (dni.length < 7) throw new ValidationError("Ingresá un DNI válido (sin puntos).");
   if (celular.length < 8) throw new ValidationError("Ingresá un celular válido.");
-  if (cjp.length < 2) throw new ValidationError("Ingresá a qué CJP pertenecés.");
+  if (cjp.length < 2) throw new ValidationError("Ingresá a qué institución pertenecés.");
   if (!eventoId) throw new ValidationError("Elegí el evento al que vas a asistir.");
 
   return Object.freeze({

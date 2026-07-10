@@ -92,7 +92,7 @@ export default function Inscripcion() {
     if (!valido.apellido) return setError("Por favor ingresá tu apellido.");
     if (!valido.dni) return setError("Ingresá un DNI válido (sin puntos).");
     if (!valido.celular) return setError("Ingresá un celular válido.");
-    if (!valido.cjp) return setError("Ingresá a qué CJP pertenecés.");
+    if (!valido.cjp) return setError("Ingresá a qué institución pertenecés.");
 
     setLoading(true);
     try {
@@ -192,7 +192,7 @@ export default function Inscripcion() {
               {field("dni", "DNI", { type: "text", placeholder: "Ej: 30123456", inputMode: "numeric" })}
               {field("celular", "Celular", { type: "tel", placeholder: "11 15 5555 5555", inputMode: "tel", maxLength: 17 })}
             </div>
-            {field("cjp", "¿A qué CJP pertenecés?", { type: "text", placeholder: "Tu CJP" })}
+            {field("cjp", "¿A qué institución pertenecés?", { type: "text", placeholder: "Tu institución" })}
 
             <div className={"form-error" + (error ? " show" : "")} role="alert" aria-live="assertive">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" /></svg>

@@ -80,7 +80,7 @@ export default function Panel() {
 
   function filasExport() {
     return filtrados.map((r) => ({
-      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, CJP: r.cjp || "",
+      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, Institucion: r.cjp || "",
       Evento: r.eventoLabel || "", Dia: fmtFecha(r.evento?.dia), Hora: r.evento?.hora || "",
       Vendedor: r.vendedorNombre || "Directo", Codigo: r.codigo,
       Asistio: r.asistio ? "Si" : "No", HoraIngreso: r.asistio ? fmtHoraIng(r.asistioAt) : "",
@@ -186,7 +186,7 @@ export default function Panel() {
           </div>
           <div className="table-wrap">
             <table className="data">
-              <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>CJP</th><th>Evento</th><th>Día / Hora</th><th>Vendedor</th><th>Código</th><th>Asistió</th><th>Acciones</th></tr></thead>
+              <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>Institución</th><th>Evento</th><th>Día / Hora</th><th>Vendedor</th><th>Código</th><th>Asistió</th><th>Acciones</th></tr></thead>
               <tbody>
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
@@ -223,7 +223,7 @@ export default function Panel() {
                 <label>DNI <span className="req">*</span><input className="input" value={editForm.dni} onChange={setEd("dni")} /></label>
                 <label>Celular <span className="req">*</span><input className="input" value={editForm.celular} onChange={setEd("celular")} /></label>
               </div>
-              <label>CJP <span className="req">*</span><input className="input" value={editForm.cjp} onChange={setEd("cjp")} /></label>
+              <label>Institución <span className="req">*</span><input className="input" value={editForm.cjp} onChange={setEd("cjp")} /></label>
               <label>Evento <span className="req">*</span>
                 <select className="input" value={editForm.eventoId} onChange={setEd("eventoId")}>
                   <option value="">Elegí un evento…</option>
