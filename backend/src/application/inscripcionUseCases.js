@@ -100,6 +100,16 @@ class MarcarAsistencia {
   async execute(codigo) { return this.inscripcionRepo.marcarAsistencia(codigo); }
 }
 
+/** Marca o desmarca la asistencia manualmente desde el panel. */
+class CambiarAsistencia {
+  constructor({ inscripcionRepo }) { this.inscripcionRepo = inscripcionRepo; }
+  async execute(codigo, asistio) {
+    const row = await this.inscripcionRepo.setAsistencia(codigo, !!asistio);
+    if (!row) throw new NotFoundError("No existe esa inscripción.");
+    return { ...row, eventoLabel: row.evento ? etiquetaEvento(row.evento) : "" };
+  }
+}
+
 class ObtenerCredencial {
   constructor({ inscripcionRepo, credencial }) { this.inscripcionRepo = inscripcionRepo; this.credencial = credencial; }
   async execute(codigo, formato = "png") {
@@ -114,5 +124,5 @@ class ObtenerCredencial {
 
 module.exports = {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
-  MarcarAsistencia, ObtenerCredencial,
+  MarcarAsistencia, CambiarAsistencia, ObtenerCredencial,
 };

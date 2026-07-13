@@ -16,11 +16,11 @@ const { CanvasCredencialGenerator } = require("./infrastructure/credencial/Canva
 const { seedSuperadmin } = require("./infrastructure/seed/seedSuperadmin");
 
 const { LoginUsuario, CrearUsuario, ListarUsuarios } = require("./application/authUseCases");
-const { CrearEvento, ActualizarEvento, ListarEventos, ListarEventosPublicos, EliminarEvento } = require("./application/eventoUseCases");
+const { CrearEvento, ActualizarEvento, CambiarEstadoEvento, ListarEventos, ListarEventosPublicos, EliminarEvento } = require("./application/eventoUseCases");
 const { CrearVendedor, ListarVendedores, EliminarVendedor, ResolverVendedor } = require("./application/vendedorUseCases");
 const {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
-  MarcarAsistencia, ObtenerCredencial,
+  MarcarAsistencia, CambiarAsistencia, ObtenerCredencial,
 } = require("./application/inscripcionUseCases");
 
 const { createServer } = require("./infrastructure/http/server");
@@ -52,6 +52,7 @@ async function main() {
 
     crearEvento: new CrearEvento({ eventoRepo }),
     actualizarEvento: new ActualizarEvento({ eventoRepo }),
+    cambiarEstadoEvento: new CambiarEstadoEvento({ eventoRepo }),
     listarEventos: new ListarEventos({ eventoRepo }),
     listarEventosPublicos: new ListarEventosPublicos({ eventoRepo }),
     eliminarEvento: new EliminarEvento({ eventoRepo }),
@@ -66,6 +67,7 @@ async function main() {
     eliminarInscripcion: new EliminarInscripcion({ inscripcionRepo }),
     actualizarInscripcion: new ActualizarInscripcion({ inscripcionRepo, eventoRepo }),
     marcarAsistencia: new MarcarAsistencia({ inscripcionRepo }),
+    cambiarAsistencia: new CambiarAsistencia({ inscripcionRepo }),
     obtenerCredencial: new ObtenerCredencial({ inscripcionRepo, credencial }),
   };
 

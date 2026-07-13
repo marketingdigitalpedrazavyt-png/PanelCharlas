@@ -31,6 +31,16 @@ class ActualizarEvento {
   }
 }
 
+/** Activa o desactiva un evento (toggle desde el panel). */
+class CambiarEstadoEvento {
+  constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
+  async execute(id, activo) {
+    const ev = await this.eventoRepo.setActivo(id, !!activo);
+    if (!ev) throw new NotFoundError("No existe ese evento.");
+    return { ...ev, etiqueta: etiquetaEvento(ev) };
+  }
+}
+
 class ListarEventos {
   constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
   async execute() {
@@ -56,4 +66,4 @@ class EliminarEvento {
   async execute(id) { await this.eventoRepo.eliminar(id); return { ok: true }; }
 }
 
-module.exports = { CrearEvento, ActualizarEvento, ListarEventos, ListarEventosPublicos, EliminarEvento };
+module.exports = { CrearEvento, ActualizarEvento, CambiarEstadoEvento, ListarEventos, ListarEventosPublicos, EliminarEvento };

@@ -106,6 +106,17 @@ class MySqlInscripcionRepository extends InscripcionRepository {
     return { estado: "ya", inscripcion: await this.buscarPorCodigo(codigo) };
   }
 
+  async setAsistencia(codigo, asistio) {
+    const [res] = await pool.query(
+      asistio
+        ? "UPDATE inscripciones SET asistio = 1, asistio_at = CURRENT_TIMESTAMP WHERE codigo = :codigo"
+        : "UPDATE inscripciones SET asistio = 0, asistio_at = NULL WHERE codigo = :codigo",
+      { codigo }
+    );
+    if (res.affectedRows === 0) return null;
+    return this.buscarPorCodigo(codigo);
+  }
+
   async eliminar(codigo) {
     const [res] = await pool.query("DELETE FROM inscripciones WHERE codigo = :codigo", { codigo });
     return res.affectedRows > 0;

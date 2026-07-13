@@ -13,6 +13,7 @@ class UsuarioRepository {
 class EventoRepository {
   async crear(evento) { noimpl(); }
   async actualizar(id, evento) { noimpl(); }
+  async setActivo(id, activo) { noimpl(); } // activa/desactiva el evento
   async listar() { noimpl(); }
   async listarActivos() { noimpl(); }
   async buscarPorId(id) { noimpl(); }
@@ -32,6 +33,7 @@ class InscripcionRepository {
   async listar(filtros) { noimpl(); }           // con datos del evento (join)
   async buscarPorCodigo(codigo) { noimpl(); }
   async marcarAsistencia(codigo) { noimpl(); }  // false→true; devuelve estado
+  async setAsistencia(codigo, asistio) { noimpl(); } // marca/desmarca desde el panel
   async eliminar(codigo) { noimpl(); }
   async contarAsistencias() { noimpl(); }
 }

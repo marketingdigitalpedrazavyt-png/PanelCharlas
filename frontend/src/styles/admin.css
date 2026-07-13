@@ -319,10 +319,34 @@ table.data tr:hover td { background: rgba(255, 255, 255, 0.03); }
 .scan-result .res-msg { font-size: 13px; color: var(--muted); margin: 0; }
 .scan-result .res-code { font-size: 12px; letter-spacing: 0.08em; color: var(--faint); margin: 6px 0 0; }
 
+/* ---------- Orden de tabla ---------- */
+.th-sort { cursor: pointer; user-select: none; }
+.th-sort:hover { color: #fff; }
+
+/* ---------- Contador / estado de evento ---------- */
+.count-pill {
+    flex: none; white-space: nowrap;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.01em;
+    background: rgba(255, 255, 255, 0.08); color: var(--muted);
+    border: 1px solid var(--border);
+}
+.list-item--off { opacity: 0.55; }
+
+/* ---------- Dashboard (Resumen) ---------- */
+.barlist { display: flex; flex-direction: column; gap: 10px; }
+.barrow { display: grid; grid-template-columns: minmax(120px, 1.4fr) 3fr minmax(96px, auto); align-items: center; gap: 12px; }
+.barrow__label { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barrow__val { font-size: 13px; font-weight: 800; text-align: right; white-space: nowrap; }
+.barrow__val .muted { color: var(--muted); font-weight: 600; }
+.bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.bar__fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f6df6, #6aa1ff); min-width: 3px; transition: width 0.3s ease; }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
     .form-2 { grid-template-columns: 1fr; }
     .topbar { flex-direction: column; align-items: flex-start; }
     table.data { min-width: 760px; }
+    .barrow { grid-template-columns: minmax(90px, 1.4fr) 2fr auto; gap: 8px; }
 }

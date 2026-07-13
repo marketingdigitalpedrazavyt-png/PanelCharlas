@@ -27,6 +27,8 @@ export default function Panel() {
   const [search, setSearch] = useState("");
   const [fEvento, setFEvento] = useState("");
   const [fVendedor, setFVendedor] = useState("");
+  const [fAsistencia, setFAsistencia] = useState(""); // "", "si", "no"
+  const [orden, setOrden] = useState({ col: "creado", dir: "desc" });
 
   // edición de inscripto
   const [editando, setEditando] = useState(null);
@@ -66,13 +68,33 @@ export default function Panel() {
   const vendedoresDistintos = useMemo(() => [...new Set(inscriptos.map((i) => i.vendedorNombre || "Directo"))].sort(), [inscriptos]);
   const filtrados = useMemo(() => {
     const t = search.trim().toLowerCase();
-    return inscriptos.filter((r) => {
+    const arr = inscriptos.filter((r) => {
       if (fEvento && (r.eventoLabel || "") !== fEvento) return false;
       if (fVendedor && (r.vendedorNombre || "Directo") !== fVendedor) return false;
+      if (fAsistencia === "si" && !r.asistio) return false;
+      if (fAsistencia === "no" && r.asistio) return false;
       if (!t) return true;
       return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
-  }, [inscriptos, search, fEvento, fVendedor]);
+    const mul = orden.dir === "asc" ? 1 : -1;
+    const val = (r) => {
+      switch (orden.col) {
+        case "nombre": return `${r.nombre} ${r.apellido}`.toLowerCase();
+        case "dni": return Number(r.dni) || 0;
+        case "evento": return (r.eventoLabel || "").toLowerCase();
+        case "fecha": return `${r.evento?.dia || ""} ${r.evento?.hora || ""}`;
+        case "vendedor": return (r.vendedorNombre || "").toLowerCase();
+        case "asistio": return r.asistio ? 1 : 0;
+        default: return r.createdAt || ""; // "creado"
+      }
+    };
+    return [...arr].sort((a, b) => { const va = val(a), vb = val(b); return va < vb ? -mul : va > vb ? mul : 0; });
+  }, [inscriptos, search, fEvento, fVendedor, fAsistencia, orden]);
+
+  function ordenarPor(col) {
+    setOrden((o) => (o.col === col ? { col, dir: o.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
+  }
+  const flecha = (col) => (orden.col === col ? (orden.dir === "asc" ? " ▲" : " ▼") : "");
 
   // Stats reflejan el filtro/búsqueda activos (ej: al filtrar por evento, el total es el de ese evento)
   const asis = filtrados.filter((i) => i.asistio).length;
@@ -99,10 +121,16 @@ export default function Panel() {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inscriptos");
     XLSX.writeFile(wb, "inscriptos-maravillas.xlsx");
   }
-  async function borrarInscripto(codigo) {
-    if (!confirm("¿Eliminar este inscripto? Se borra del panel y de la base de datos.")) return;
-    try { await api.eliminarInscripcion(codigo); setInscriptos((l) => l.filter((i) => i.codigo !== codigo)); }
+  async function borrarInscripto(r) {
+    if (!confirm(`¿Eliminar a ${r.nombre} ${r.apellido}? Se borra del panel y de la base de datos.`)) return;
+    try { await api.eliminarInscripcion(r.codigo); setInscriptos((l) => l.filter((i) => i.codigo !== r.codigo)); }
     catch (e) { alert("No se pudo eliminar."); }
+  }
+  async function toggleAsistencia(r) {
+    try {
+      const upd = await api.cambiarAsistencia(r.codigo, !r.asistio);
+      setInscriptos((l) => l.map((i) => (i.codigo === r.codigo ? { ...i, asistio: upd.asistio, asistioAt: upd.asistioAt } : i)));
+    } catch (e) { alert("No se pudo actualizar la asistencia."); }
   }
 
   function abrirEdicion(r) {
@@ -158,12 +186,14 @@ export default function Panel() {
       </div>
 
       <div className="tabs">
-        {["inscriptos", "eventos", "vendedores"].concat(esSuper ? ["usuarios"] : []).map((t) => (
+        {["resumen", "inscriptos", "eventos", "vendedores"].concat(esSuper ? ["usuarios"] : []).map((t) => (
           <button key={t} className={"tab" + (tab === t ? " is-active" : "")} onClick={() => setTab(t)}>
             {t[0].toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
+
+      {tab === "resumen" && <ResumenTab inscriptos={inscriptos} eventos={eventos} />}
 
       {tab === "inscriptos" && (
         <div className="tab-panel is-active">
@@ -181,12 +211,27 @@ export default function Panel() {
             <select className="input select" value={fVendedor} onChange={(e) => setFVendedor(e.target.value)}>
               <option value="">Todos los vendedores</option>{vendedoresDistintos.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
+            <select className="input select" value={fAsistencia} onChange={(e) => setFAsistencia(e.target.value)}>
+              <option value="">Asistencia: todos</option>
+              <option value="si">Solo asistieron</option>
+              <option value="no">Solo pendientes</option>
+            </select>
             <button className="btn btn--ghost btn--sm" onClick={exportCSV}>Exportar CSV</button>
             <button className="btn btn--ghost btn--sm" onClick={exportXLSX}>Exportar Excel</button>
           </div>
           <div className="table-wrap">
             <table className="data">
-              <thead><tr><th>Nombre</th><th>DNI</th><th>Celular</th><th>Institución</th><th>Evento</th><th>Día / Hora</th><th>Vendedor</th><th>Código</th><th>Asistió</th><th>Acciones</th></tr></thead>
+              <thead><tr>
+                <th className="th-sort" onClick={() => ordenarPor("nombre")}>Nombre{flecha("nombre")}</th>
+                <th className="th-sort" onClick={() => ordenarPor("dni")}>DNI{flecha("dni")}</th>
+                <th>Celular</th><th>Institución</th>
+                <th className="th-sort" onClick={() => ordenarPor("evento")}>Evento{flecha("evento")}</th>
+                <th className="th-sort" onClick={() => ordenarPor("fecha")}>Día / Hora{flecha("fecha")}</th>
+                <th className="th-sort" onClick={() => ordenarPor("vendedor")}>Vendedor{flecha("vendedor")}</th>
+                <th>Código</th>
+                <th className="th-sort" onClick={() => ordenarPor("asistio")}>Asistió{flecha("asistio")}</th>
+                <th>Acciones</th>
+              </tr></thead>
               <tbody>
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
@@ -197,9 +242,12 @@ export default function Panel() {
                     <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
                     <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
                     <td><div className="td-actions">
+                      <button className={"btn btn--sm " + (r.asistio ? "btn--ghost" : "btn--primary")} onClick={() => toggleAsistencia(r)}>
+                        {r.asistio ? "Quitar asist." : "Marcar asist."}
+                      </button>
                       <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(r)}>Editar</button>
                       <a className="btn btn--ghost btn--sm" href={api.credencialPdf(r.codigo)} target="_blank" rel="noreferrer">PDF</a>
-                      <button className="btn btn--danger btn--sm" onClick={() => borrarInscripto(r.codigo)}>Borrar</button>
+                      <button className="btn btn--danger btn--sm" onClick={() => borrarInscripto(r)}>Borrar</button>
                     </div></td>
                   </tr>
                 ))}
@@ -240,21 +288,105 @@ export default function Panel() {
         </div>
       )}
 
-      {tab === "eventos" && <EventosTab eventos={eventos} onChange={cargarTodo} />}
+      {tab === "eventos" && <EventosTab eventos={eventos} inscriptos={inscriptos} onChange={cargarTodo} />}
       {tab === "vendedores" && <VendedoresTab vendedores={vendedores} linkBase={linkBase} onChange={cargarTodo} />}
       {tab === "usuarios" && esSuper && <UsuariosTab usuarios={usuarios} onChange={cargarTodo} />}
     </div>
   );
 }
 
+/* ================= Resumen (dashboard) ================= */
+function ResumenTab({ inscriptos, eventos }) {
+  const total = inscriptos.length;
+  const asist = inscriptos.filter((i) => i.asistio).length;
+  const tasa = total ? Math.round((asist / total) * 100) : 0;
+  const activos = eventos.filter((e) => e.activo).length;
+
+  const porEvento = useMemo(() => {
+    const m = new Map();
+    for (const ev of eventos) m.set(ev.id, { label: ev.etiqueta || ev.lugar || ev.barrio, total: 0, asist: 0 });
+    let sinEvento = 0;
+    for (const i of inscriptos) {
+      const id = i.evento?.id;
+      if (id && m.has(id)) { const o = m.get(id); o.total++; if (i.asistio) o.asist++; }
+      else sinEvento++;
+    }
+    const arr = [...m.values()].filter((o) => o.total > 0);
+    if (sinEvento) arr.push({ label: "Sin evento", total: sinEvento, asist: 0 });
+    return arr.sort((a, b) => b.total - a.total);
+  }, [inscriptos, eventos]);
+
+  const porVendedor = useMemo(() => {
+    const m = new Map();
+    for (const i of inscriptos) { const k = i.vendedorNombre || "Directo"; m.set(k, (m.get(k) || 0) + 1); }
+    return [...m.entries()].map(([nombre, n]) => ({ nombre, n })).sort((a, b) => b.n - a.n);
+  }, [inscriptos]);
+
+  const maxEv = Math.max(1, ...porEvento.map((o) => o.total));
+  const maxVe = Math.max(1, ...porVendedor.map((o) => o.n));
+
+  return (
+    <div className="tab-panel is-active">
+      <div className="stats">
+        <div className="stat stat--accent"><b>{total}</b><span>Inscriptos totales</span></div>
+        <div className="stat"><b>{asist}</b><span>Asistieron ({tasa}%)</span></div>
+        <div className="stat"><b>{total - asist}</b><span>Pendientes</span></div>
+        <div className="stat"><b>{activos}/{eventos.length}</b><span>Eventos activos</span></div>
+      </div>
+
+      <div className="card">
+        <h2>Inscriptos por evento</h2>
+        {porEvento.length ? (
+          <div className="barlist">
+            {porEvento.map((o, idx) => (
+              <div className="barrow" key={idx}>
+                <div className="barrow__label" title={o.label}>{o.label}</div>
+                <div className="bar"><div className="bar__fill" style={{ width: (o.total / maxEv) * 100 + "%" }} /></div>
+                <div className="barrow__val">{o.total}<span className="muted"> · {o.asist} asist.</span></div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="empty">Sin datos todavía.</p>}
+      </div>
+
+      <div className="card">
+        <h2>Ranking de vendedores</h2>
+        {porVendedor.length ? (
+          <div className="barlist">
+            {porVendedor.map((o, idx) => (
+              <div className="barrow" key={idx}>
+                <div className="barrow__label" title={o.nombre}>{idx + 1}. {o.nombre}</div>
+                <div className="bar"><div className="bar__fill" style={{ width: (o.n / maxVe) * 100 + "%" }} /></div>
+                <div className="barrow__val">{o.n}</div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="empty">Sin datos todavía.</p>}
+      </div>
+    </div>
+  );
+}
+
 /* ================= Eventos ================= */
-function EventosTab({ eventos, onChange }) {
+function EventosTab({ eventos, inscriptos, onChange }) {
   const VACIO = { dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "" };
   const [f, setF] = useState(VACIO);
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+
+  // Conteo de inscriptos (y asistencias) por evento
+  const conteo = useMemo(() => {
+    const m = {};
+    for (const i of inscriptos || []) {
+      const id = i.evento?.id;
+      if (!id) continue;
+      if (!m[id]) m[id] = { total: 0, asist: 0 };
+      m[id].total++; if (i.asistio) m[id].asist++;
+    }
+    return m;
+  }, [inscriptos]);
 
   const eventosFiltrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -263,6 +395,11 @@ function EventosTab({ eventos, onChange }) {
       `${ev.etiqueta} ${ev.lugar || ""} ${ev.direccion || ""} ${ev.barrio || ""} ${ev.vendedor || ""}`.toLowerCase().includes(t)
     );
   }, [eventos, q]);
+
+  async function toggleActivo(ev) {
+    try { await api.cambiarEstadoEvento(ev.id, !ev.activo); onChange(); }
+    catch (e) { alert("No se pudo cambiar el estado del evento."); }
+  }
 
   function editar(ev) {
     setEditId(ev.id);
@@ -315,13 +452,23 @@ function EventosTab({ eventos, onChange }) {
           </div>
         )}
         <div className="list">
-          {eventosFiltrados.length ? eventosFiltrados.map((ev) => (
-            <div className="list-item" key={ev.id} style={editId === ev.id ? { borderColor: "rgba(255,255,255,0.5)" } : null}>
-              <div className="list-item__info"><strong>{ev.etiqueta}</strong><span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span></div>
+          {eventosFiltrados.length ? eventosFiltrados.map((ev) => {
+            const c = conteo[ev.id] || { total: 0, asist: 0 };
+            return (
+            <div className={"list-item" + (ev.activo ? "" : " list-item--off")} key={ev.id} style={editId === ev.id ? { borderColor: "rgba(255,255,255,0.5)" } : null}>
+              <div className="list-item__info">
+                <strong>{ev.etiqueta}</strong>
+                <span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span>
+              </div>
+              <span className="count-pill" title={`${c.asist} asistieron`}>{c.total} insc.{c.total ? ` · ${c.asist} asist.` : ""}</span>
+              <button className={"btn btn--sm " + (ev.activo ? "btn--ghost" : "btn--primary")} onClick={() => toggleActivo(ev)} title="Activar / desactivar para el formulario">
+                {ev.activo ? "● Activo" : "○ Inactivo"}
+              </button>
               <button className="btn btn--ghost btn--sm" onClick={() => editar(ev)}>Editar</button>
               <button className="icon-btn" onClick={() => borrar(ev.id)}>✕</button>
             </div>
-          )) : <p className="empty">{eventos.length ? "Sin resultados." : "Todavía no creaste ningún evento."}</p>}
+            );
+          }) : <p className="empty">{eventos.length ? "Sin resultados." : "Todavía no creaste ningún evento."}</p>}
         </div>
       </div>
     </div>

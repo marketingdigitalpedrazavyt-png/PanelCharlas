@@ -43,6 +43,15 @@ class MySqlEventoRepository extends EventoRepository {
     return res.affectedRows > 0 ? { ...evento, id: Number(id) } : null;
   }
 
+  async setActivo(id, activo) {
+    const [res] = await pool.query(
+      "UPDATE eventos SET activo = :a WHERE id = :id",
+      { id, a: activo ? 1 : 0 }
+    );
+    if (res.affectedRows === 0) return null;
+    return this.buscarPorId(id);
+  }
+
   async listar() {
     const [rows] = await pool.query("SELECT * FROM eventos ORDER BY dia, hora");
     return rows.map(map);
