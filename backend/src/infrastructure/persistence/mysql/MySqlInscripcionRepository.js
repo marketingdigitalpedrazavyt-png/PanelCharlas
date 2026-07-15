@@ -12,6 +12,7 @@ function map(row) {
     dni: row.dni,
     celular: row.celular,
     cjp: row.cjp || "",
+    email: row.email || "",
     vendedorSlug: row.vendedor_slug || null,
     vendedorNombre: row.vendedor_nombre || "Directo",
     asistio: !!row.asistio,
@@ -38,11 +39,11 @@ class MySqlInscripcionRepository extends InscripcionRepository {
     try {
       const [res] = await pool.query(
         `INSERT INTO inscripciones
-           (codigo, nombre, apellido, dni, celular, cjp, evento_id, vendedor_slug, vendedor_nombre, asistio)
-         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :cjp, :eventoId, :vendedorSlug, :vendedorNombre, 0)`,
+           (codigo, nombre, apellido, dni, celular, cjp, email, evento_id, vendedor_slug, vendedor_nombre, asistio)
+         VALUES (:codigo, :nombre, :apellido, :dni, :celular, :cjp, :email, :eventoId, :vendedorSlug, :vendedorNombre, 0)`,
         {
           codigo: insc.codigo, nombre: insc.nombre, apellido: insc.apellido,
-          dni: insc.dni, celular: insc.celular, cjp: insc.cjp || "",
+          dni: insc.dni, celular: insc.celular, cjp: insc.cjp || "", email: insc.email || "",
           eventoId: insc.eventoId,
           vendedorSlug: insc.vendedorSlug, vendedorNombre: insc.vendedorNombre,
         }
@@ -66,11 +67,11 @@ class MySqlInscripcionRepository extends InscripcionRepository {
       await pool.query(
         `UPDATE inscripciones
             SET nombre = :nombre, apellido = :apellido, dni = :dni,
-                celular = :celular, cjp = :cjp, evento_id = :eventoId
+                celular = :celular, cjp = :cjp, email = :email, evento_id = :eventoId
           WHERE codigo = :codigo`,
         {
           codigo, nombre: datos.nombre, apellido: datos.apellido, dni: datos.dni,
-          celular: datos.celular, cjp: datos.cjp || "", eventoId: datos.eventoId,
+          celular: datos.celular, cjp: datos.cjp || "", email: datos.email || "", eventoId: datos.eventoId,
         }
       );
     } catch (e) {

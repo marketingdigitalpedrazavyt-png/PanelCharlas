@@ -18,7 +18,7 @@ class CrearInscripcion {
   constructor({ inscripcionRepo, eventoRepo, vendedorRepo, credencial, whatsapp, config }) {
     Object.assign(this, { inscripcionRepo, eventoRepo, vendedorRepo, credencial, whatsapp, config });
   }
-  async execute({ nombre, apellido, dni, celular, cjp, eventoId, vendedorSlug }) {
+  async execute({ nombre, apellido, dni, celular, cjp, email, eventoId, vendedorSlug }) {
     const evento = await this.eventoRepo.buscarPorId(eventoId);
     if (!evento || !evento.activo) throw new ValidationError("El evento elegido no está disponible.");
 
@@ -31,8 +31,8 @@ class CrearInscripcion {
     }
 
     const inscripcion = crearInscripcion({
-      nombre, apellido, dni, celular, cjp, eventoId: evento.id,
-      vendedorSlug: slug, vendedorNombre,
+      nombre, apellido, dni, celular, cjp, email, modalidad: evento.modalidad,
+      eventoId: evento.id, vendedorSlug: slug, vendedorNombre,
     });
     const creada = await this.inscripcionRepo.crear(inscripcion); // puede lanzar ConflictError
 
@@ -81,14 +81,15 @@ class ActualizarInscripcion {
   async execute(codigo, input) {
     const evento = await this.eventoRepo.buscarPorId(input.eventoId);
     if (!evento) throw new ValidationError("El evento elegido no existe.");
-    // Reutiliza la validación del dominio (limpia dni/celular, valida cjp, etc.)
+    // Reutiliza la validación del dominio (limpia dni/celular, valida cjp/email según modalidad)
     const v = crearInscripcion({
       nombre: input.nombre, apellido: input.apellido, dni: input.dni,
-      celular: input.celular, cjp: input.cjp, eventoId: evento.id,
+      celular: input.celular, cjp: input.cjp, email: input.email,
+      modalidad: evento.modalidad, eventoId: evento.id,
     });
     const actualizada = await this.inscripcionRepo.actualizar(codigo, {
       nombre: v.nombre, apellido: v.apellido, dni: v.dni,
-      celular: v.celular, cjp: v.cjp, eventoId: evento.id,
+      celular: v.celular, cjp: v.cjp, email: v.email, eventoId: evento.id,
     });
     if (!actualizada) throw new NotFoundError("No existe esa inscripción.");
     return { ...actualizada, eventoLabel: actualizada.evento ? etiquetaEvento(actualizada.evento) : "" };

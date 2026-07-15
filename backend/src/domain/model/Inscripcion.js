@@ -11,31 +11,41 @@ function generarCodigo() {
   return "MM-" + s;
 }
 
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
  * Entidad Inscripcion. Obligatorios: nombre, apellido, dni(≥7), celular(≥8), eventoId.
+ * Según la modalidad del evento:
+ *   - presencial → pide "institución" (cjp)
+ *   - zoom       → pide "correo" (email)
  */
 function crearInscripcion({
-  id = null, codigo = null, nombre, apellido, dni, celular, cjp,
+  id = null, codigo = null, nombre, apellido, dni, celular, cjp, email,
   eventoId, vendedorSlug = null, vendedorNombre = "Directo",
-  asistio = false, asistioAt = null,
+  asistio = false, asistioAt = null, modalidad = "presencial",
 }) {
   nombre = String(nombre || "").trim();
   apellido = String(apellido || "").trim();
   dni = soloDigitos(dni);
   celular = soloDigitos(celular);
   cjp = String(cjp || "").trim();
+  email = String(email || "").trim();
 
   if (nombre.length < 2) throw new ValidationError("Ingresá tu nombre.");
   if (apellido.length < 2) throw new ValidationError("Ingresá tu apellido.");
   if (dni.length < 7) throw new ValidationError("Ingresá un DNI válido (sin puntos).");
   if (celular.length < 8) throw new ValidationError("Ingresá un celular válido.");
-  if (cjp.length < 2) throw new ValidationError("Ingresá a qué institución pertenecés.");
+  if (modalidad === "zoom") {
+    if (!RE_EMAIL.test(email)) throw new ValidationError("Ingresá un correo electrónico válido.");
+  } else {
+    if (cjp.length < 2) throw new ValidationError("Ingresá a qué institución pertenecés.");
+  }
   if (!eventoId) throw new ValidationError("Elegí el evento al que vas a asistir.");
 
   return Object.freeze({
     id,
     codigo: codigo || generarCodigo(),
-    nombre, apellido, dni, celular, cjp,
+    nombre, apellido, dni, celular, cjp, email,
     eventoId,
     vendedorSlug: vendedorSlug || null,
     vendedorNombre: vendedorNombre || "Directo",

@@ -1142,6 +1142,17 @@ body {
     min-height: 18px;
 }
 
+/* Evento fijo (Zoom sin selector) */
+.field-static {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 15px;
+    color: #eaf2ff;
+}
+
 /* Confirmación de charla online (Zoom) */
 .cred-zoom { text-align: center; padding: 6px 4px 2px; }
 .cred-zoom__msg { margin: 0 0 14px; font-size: 15px; line-height: 1.55; color: #eaf2ff; }

@@ -76,7 +76,7 @@ export default function Panel() {
       if (fAsistencia === "no" && r.asistio) return false;
       if (fModalidad && (r.evento?.modalidad || "presencial") !== fModalidad) return false;
       if (!t) return true;
-      return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
+      return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.email} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
     const mul = orden.dir === "asc" ? 1 : -1;
     const val = (r) => {
@@ -104,7 +104,7 @@ export default function Panel() {
 
   function filasExport() {
     return filtrados.map((r) => ({
-      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, Institucion: r.cjp || "",
+      Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, Institucion: r.cjp || "", Email: r.email || "",
       Evento: r.eventoLabel || "", Dia: fmtFecha(r.evento?.dia), Hora: r.evento?.hora || "",
       Vendedor: r.vendedorNombre || "Directo", Codigo: r.codigo,
       Asistio: r.asistio ? "Si" : "No", HoraIngreso: r.asistio ? fmtHoraIng(r.asistioAt) : "",
@@ -137,7 +137,7 @@ export default function Panel() {
 
   function abrirEdicion(r) {
     setEditando(r);
-    setEditForm({ nombre: r.nombre, apellido: r.apellido, dni: r.dni, celular: r.celular, cjp: r.cjp || "", eventoId: r.evento?.id || "" });
+    setEditForm({ nombre: r.nombre, apellido: r.apellido, dni: r.dni, celular: r.celular, cjp: r.cjp || "", email: r.email || "", eventoId: r.evento?.id || "" });
     setEditError("");
   }
   const setEd = (k) => (e) => setEditForm({ ...editForm, [k]: e.target.value });
@@ -147,7 +147,7 @@ export default function Panel() {
     try {
       await api.actualizarInscripcion(editando.codigo, {
         nombre: editForm.nombre, apellido: editForm.apellido, dni: editForm.dni,
-        celular: editForm.celular, cjp: editForm.cjp, eventoId: Number(editForm.eventoId),
+        celular: editForm.celular, cjp: editForm.cjp, email: editForm.email, eventoId: Number(editForm.eventoId),
       });
       setEditando(null);
       cargarTodo();
@@ -231,7 +231,7 @@ export default function Panel() {
               <thead><tr>
                 <th className="th-sort" onClick={() => ordenarPor("nombre")}>Nombre{flecha("nombre")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("dni")}>DNI{flecha("dni")}</th>
-                <th>Celular</th><th>Institución</th>
+                <th>Celular</th><th>Institución</th><th>Email</th>
                 <th className="th-sort" onClick={() => ordenarPor("evento")}>Evento{flecha("evento")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("fecha")}>Día / Hora{flecha("fecha")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("vendedor")}>Vendedor{flecha("vendedor")}</th>
@@ -244,6 +244,7 @@ export default function Panel() {
                   <tr key={r.codigo}>
                     <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
                     <td>{r.cjp}</td>
+                    <td>{r.email}</td>
                     <td>
                       {r.evento?.modalidad === "zoom" && <span className="badge badge--zoom">Zoom</span>}{" "}
                       {r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}
@@ -281,7 +282,10 @@ export default function Panel() {
                 <label>DNI <span className="req">*</span><input className="input" value={editForm.dni} onChange={setEd("dni")} /></label>
                 <label>Celular <span className="req">*</span><input className="input" value={editForm.celular} onChange={setEd("celular")} /></label>
               </div>
-              <label>Institución <span className="req">*</span><input className="input" value={editForm.cjp} onChange={setEd("cjp")} /></label>
+              <div className="form-2">
+                <label>Institución <span className="hint">(presencial)</span><input className="input" value={editForm.cjp} onChange={setEd("cjp")} /></label>
+                <label>Correo <span className="hint">(zoom)</span><input className="input" type="email" value={editForm.email} onChange={setEd("email")} /></label>
+              </div>
               <label>Evento <span className="req">*</span>
                 <select className="input" value={editForm.eventoId} onChange={setEd("eventoId")}>
                   <option value="">Elegí un evento…</option>

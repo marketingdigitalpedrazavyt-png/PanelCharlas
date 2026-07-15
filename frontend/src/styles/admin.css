@@ -219,7 +219,7 @@ a { color: #fff; }
     overflow: auto;            /* scroll horizontal Y vertical propios */
     background: var(--card);
 }
-table.data { width: 100%; min-width: 880px; border-collapse: collapse; font-size: 13px; }
+table.data { width: 100%; min-width: 980px; border-collapse: collapse; font-size: 13px; }
 table.data th {
     text-align: left;
     padding: 13px 14px;

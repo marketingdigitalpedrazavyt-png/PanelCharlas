@@ -14,7 +14,7 @@ function maskPhone(v) {
 export default function Inscripcion({ modalidad = "presencial" }) {
   const esZoom = modalidad === "zoom";
   const [eventos, setEventos] = useState(null);      // null = cargando
-  const [form, setForm] = useState({ eventoId: "", nombre: "", apellido: "", dni: "", celular: "", cjp: "" });
+  const [form, setForm] = useState({ eventoId: "", nombre: "", apellido: "", dni: "", celular: "", cjp: "", correo: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [vendedor, setVendedor] = useState(null);
@@ -30,6 +30,13 @@ export default function Inscripcion({ modalidad = "presencial" }) {
     const slug = (params.get("v") || params.get("vendedor") || "").trim().toLowerCase();
     if (slug) api.resolverVendedor(slug).then(setVendedor).catch(() => {});
   }, [params, modalidad]);
+
+  // Zoom sin selector: si hay un único evento, se elige automáticamente.
+  useEffect(() => {
+    if (esZoom && Array.isArray(eventos) && eventos.length === 1) {
+      setForm((f) => (f.eventoId ? f : { ...f, eventoId: String(eventos[0].id) }));
+    }
+  }, [esZoom, eventos]);
 
   // Video: activar audio al primer click
   useEffect(() => {
@@ -76,6 +83,7 @@ export default function Inscripcion({ modalidad = "presencial" }) {
     dni: onlyDigits(form.dni).length >= 7,
     celular: onlyDigits(form.celular).length >= 8,
     cjp: form.cjp.trim().length >= 2,
+    correo: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim()),
   };
 
   function set(campo, valor) {
@@ -88,21 +96,24 @@ export default function Inscripcion({ modalidad = "presencial" }) {
   async function onSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!valido.eventoId) return setError("Elegí el evento al que vas a asistir.");
+    if (!valido.eventoId) return setError(esZoom ? "No hay una charla online disponible." : "Elegí el evento al que vas a asistir.");
     if (!valido.nombre) return setError("Por favor ingresá tu nombre.");
     if (!valido.apellido) return setError("Por favor ingresá tu apellido.");
     if (!valido.dni) return setError("Ingresá un DNI válido (sin puntos).");
     if (!valido.celular) return setError("Ingresá un celular válido.");
-    if (!valido.cjp) return setError("Ingresá a qué institución pertenecés.");
+    if (esZoom) { if (!valido.correo) return setError("Ingresá un correo electrónico válido."); }
+    else { if (!valido.cjp) return setError("Ingresá a qué institución pertenecés."); }
 
     setLoading(true);
     try {
-      const r = await api.crearInscripcion({
+      const base = {
         nombre: form.nombre.trim(), apellido: form.apellido.trim(),
         dni: onlyDigits(form.dni), celular: onlyDigits(form.celular),
-        cjp: form.cjp.trim(),
         eventoId: Number(form.eventoId), vendedorSlug: vendedor?.slug || null,
-      });
+      };
+      const r = await api.crearInscripcion(
+        esZoom ? { ...base, email: form.correo.trim() } : { ...base, cjp: form.cjp.trim() }
+      );
       setResult(r);
       if (esZoom) setWaMsg("");
       else if (r.whatsapp?.ok) setWaMsg("✓ Te enviamos la credencial por WhatsApp.");
@@ -180,13 +191,32 @@ export default function Inscripcion({ modalidad = "presencial" }) {
               {vendedor && <span className="vendor-chip">Te invitó: {vendedor.nombre}</span>}
             </div>
 
-            <div className="field">
-              <label htmlFor="evento">{esZoom ? "Charla online a la que asistís" : "Evento al que asistís"}</label>
-              <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>
-                <option value="" disabled>{eventos === null ? "Cargando eventos…" : (eventos.length ? "Elegí un evento…" : "No hay eventos disponibles")}</option>
-                {(eventos || []).map((e) => <option key={e.id} value={e.id}>{e.etiqueta}</option>)}
-              </select>
-            </div>
+            {esZoom ? (
+              (eventos && eventos.length > 1) ? (
+                <div className="field">
+                  <label htmlFor="evento">Charla online a la que asistís</label>
+                  <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>
+                    <option value="" disabled>Elegí una charla…</option>
+                    {eventos.map((e) => <option key={e.id} value={e.id}>{e.etiqueta}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div className="field">
+                  <label>Charla online</label>
+                  <p className="field-static">
+                    {eventos === null ? "Cargando…" : (eventos.length === 1 ? eventos[0].etiqueta : "No hay charlas online disponibles por ahora.")}
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="field">
+                <label htmlFor="evento">Evento al que asistís</label>
+                <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>
+                  <option value="" disabled>{eventos === null ? "Cargando eventos…" : (eventos.length ? "Elegí un evento…" : "No hay eventos disponibles")}</option>
+                  {(eventos || []).map((e) => <option key={e.id} value={e.id}>{e.etiqueta}</option>)}
+                </select>
+              </div>
+            )}
 
             <div className="field-row">
               {field("nombre", "Nombre", { type: "text", placeholder: "Tu nombre", autoComplete: "given-name" })}
@@ -196,7 +226,9 @@ export default function Inscripcion({ modalidad = "presencial" }) {
               {field("dni", "DNI", { type: "text", placeholder: "Ej: 30123456", inputMode: "numeric" })}
               {field("celular", "Celular", { type: "tel", placeholder: "11 15 5555 5555", inputMode: "tel", maxLength: 17 })}
             </div>
-            {field("cjp", "¿A qué institución pertenecés?", { type: "text", placeholder: "Tu institución" })}
+            {esZoom
+              ? field("correo", "Correo electrónico", { type: "email", placeholder: "tu@correo.com", inputMode: "email", autoComplete: "email" })
+              : field("cjp", "¿A qué institución pertenecés?", { type: "text", placeholder: "Tu institución" })}
 
             <div className={"form-error" + (error ? " show" : "")} role="alert" aria-live="assertive">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6M12 16.5v.5" /></svg>
