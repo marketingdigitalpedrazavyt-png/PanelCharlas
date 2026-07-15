@@ -36,9 +36,10 @@ class CrearInscripcion {
     });
     const creada = await this.inscripcionRepo.crear(inscripcion); // puede lanzar ConflictError
 
-    // Envío por WhatsApp (best-effort, no bloquea el alta)
+    // Envío por WhatsApp (best-effort, no bloquea el alta).
+    // Los eventos por Zoom NO envían credencial por WhatsApp.
     let whatsapp = { skipped: true };
-    if (this.config.whatsappEnabled) {
+    if (this.config.whatsappEnabled && evento.modalidad !== "zoom") {
       try {
         const { png } = await this.credencial.generar(datosCredencial(creada, evento));
         const caption =
@@ -51,7 +52,7 @@ class CrearInscripcion {
         });
       } catch (e) { whatsapp = { ok: false, error: e.message }; }
     }
-    return { codigo: creada.codigo, whatsapp };
+    return { codigo: creada.codigo, whatsapp, modalidad: evento.modalidad || "presencial" };
   }
 }
 

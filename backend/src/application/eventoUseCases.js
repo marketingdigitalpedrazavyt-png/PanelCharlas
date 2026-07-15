@@ -54,9 +54,11 @@ class ListarEventos {
  *  desplegable del formulario público. Los que ya pasaron no aparecen. */
 class ListarEventosPublicos {
   constructor({ eventoRepo }) { this.eventoRepo = eventoRepo; }
-  async execute() {
+  async execute(modalidad = "presencial") {
+    const mod = modalidad === "zoom" ? "zoom" : "presencial";
     const eventos = await this.eventoRepo.listarActivos();
     return eventos
+      .filter((e) => (e.modalidad || "presencial") === mod)
       .filter(eventoVigente)
       .map((e) => ({ id: e.id, etiqueta: etiquetaEvento(e) }));
   }

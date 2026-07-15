@@ -12,18 +12,21 @@ function map(row) {
     barrio: row.barrio,
     vendedor: row.vendedor || "",
     activo: !!row.activo,
+    modalidad: row.modalidad || "presencial",
+    enlace: row.enlace || "",
   };
 }
 
 class MySqlEventoRepository extends EventoRepository {
   async crear(evento) {
     const [res] = await pool.query(
-      `INSERT INTO eventos (dia, hora, lugar, direccion, barrio, vendedor, activo)
-       VALUES (:dia, :hora, :lugar, :direccion, :barrio, :vendedor, :activo)`,
+      `INSERT INTO eventos (dia, hora, lugar, direccion, barrio, vendedor, activo, modalidad, enlace)
+       VALUES (:dia, :hora, :lugar, :direccion, :barrio, :vendedor, :activo, :modalidad, :enlace)`,
       {
         dia: evento.dia, hora: evento.hora, lugar: evento.lugar || null,
         direccion: evento.direccion, barrio: evento.barrio,
         vendedor: evento.vendedor || null, activo: evento.activo ? 1 : 0,
+        modalidad: evento.modalidad || "presencial", enlace: evento.enlace || null,
       }
     );
     return { ...evento, id: res.insertId };
@@ -33,11 +36,13 @@ class MySqlEventoRepository extends EventoRepository {
     // No toca "activo" (se preserva el estado actual)
     const [res] = await pool.query(
       `UPDATE eventos SET dia = :dia, hora = :hora, lugar = :lugar,
-              direccion = :direccion, barrio = :barrio, vendedor = :vendedor
+              direccion = :direccion, barrio = :barrio, vendedor = :vendedor,
+              modalidad = :modalidad, enlace = :enlace
        WHERE id = :id`,
       {
         id, dia: evento.dia, hora: evento.hora, lugar: evento.lugar || null,
         direccion: evento.direccion, barrio: evento.barrio, vendedor: evento.vendedor || null,
+        modalidad: evento.modalidad || "presencial", enlace: evento.enlace || null,
       }
     );
     return res.affectedRows > 0 ? { ...evento, id: Number(id) } : null;

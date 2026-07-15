@@ -11,7 +11,8 @@ function maskPhone(v) {
   return d.slice(0, 2) + " " + d.slice(2, 4) + " " + d.slice(4, 8) + " " + d.slice(8);
 }
 
-export default function Inscripcion() {
+export default function Inscripcion({ modalidad = "presencial" }) {
+  const esZoom = modalidad === "zoom";
   const [eventos, setEventos] = useState(null);      // null = cargando
   const [form, setForm] = useState({ eventoId: "", nombre: "", apellido: "", dni: "", celular: "", cjp: "" });
   const [error, setError] = useState("");
@@ -25,10 +26,10 @@ export default function Inscripcion() {
 
   // Cargar eventos + resolver vendedor por link
   useEffect(() => {
-    api.eventosPublicos().then(setEventos).catch(() => setEventos([]));
+    api.eventosPublicos(modalidad).then(setEventos).catch(() => setEventos([]));
     const slug = (params.get("v") || params.get("vendedor") || "").trim().toLowerCase();
     if (slug) api.resolverVendedor(slug).then(setVendedor).catch(() => {});
-  }, [params]);
+  }, [params, modalidad]);
 
   // Video: activar audio al primer click
   useEffect(() => {
@@ -103,7 +104,8 @@ export default function Inscripcion() {
         eventoId: Number(form.eventoId), vendedorSlug: vendedor?.slug || null,
       });
       setResult(r);
-      if (r.whatsapp?.ok) setWaMsg("✓ Te enviamos la credencial por WhatsApp.");
+      if (esZoom) setWaMsg("");
+      else if (r.whatsapp?.ok) setWaMsg("✓ Te enviamos la credencial por WhatsApp.");
       else if (r.whatsapp?.skipped) setWaMsg("Descargá o compartí tu credencial con los botones.");
       else setWaMsg("No pudimos enviarla por WhatsApp. Descargala con el botón.");
     } catch (err) {
@@ -161,7 +163,7 @@ export default function Inscripcion() {
       <main className="container">
         <section className="hero">
           <img src="/logopedraza.png" alt="Pedraza Viajes y Turismo" className="hero__logo" />
-          <span className="hero__eyebrow">Charla informativa</span>
+          <span className="hero__eyebrow">{esZoom ? "Charla informativa · Online por Zoom" : "Charla informativa"}</span>
           <h1 className="hero__title">Descubrí las<br /><span className="gilded">Maravillas</span> del Mediterráneo</h1>
           <p className="hero__subtitle">Inscribite a nuestra charla exclusiva y conocé los itinerarios: aguas cristalinas, puertos históricos y atardeceres inolvidables.</p>
         </section>
@@ -171,13 +173,15 @@ export default function Inscripcion() {
           <form className="formulario" onSubmit={onSubmit} noValidate>
             <div className="form-head">
               <span className="script">Inscribite a la</span>
-              <span className="title">Charla</span>
-              <span className="subtitle">Elegí el evento, completá tus datos y recibí tu credencial con QR</span>
+              <span className="title">{esZoom ? "Charla Online" : "Charla"}</span>
+              <span className="subtitle">{esZoom
+                ? "Elegí la charla por Zoom, completá tus datos y quedás inscripto/a"
+                : "Elegí el evento, completá tus datos y recibí tu credencial con QR"}</span>
               {vendedor && <span className="vendor-chip">Te invitó: {vendedor.nombre}</span>}
             </div>
 
             <div className="field">
-              <label htmlFor="evento">Evento al que asistís</label>
+              <label htmlFor="evento">{esZoom ? "Charla online a la que asistís" : "Evento al que asistís"}</label>
               <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>
                 <option value="" disabled>{eventos === null ? "Cargando eventos…" : (eventos.length ? "Elegí un evento…" : "No hay eventos disponibles")}</option>
                 {(eventos || []).map((e) => <option key={e.id} value={e.id}>{e.etiqueta}</option>)}
@@ -237,18 +241,31 @@ export default function Inscripcion() {
               <h2 className="ticket__title">¡Estás <span className="script">a bordo</span>!</h2>
               <p className="ticket__greeting">¡Felicitaciones, {form.nombre}!</p>
             </div>
-            <div className="cred-preview">
-              <img className="cred-img" src={api.credencialPng(result.codigo)} alt={"Credencial " + result.codigo} />
-            </div>
-            <div className="cred-actions">
-              <a className="cred-btn cred-btn--gold" href={api.credencialPdf(result.codigo)} target="_blank" rel="noreferrer">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" /></svg>Descargar PDF
-              </a>
-              <button className="cred-btn cred-btn--ghost" type="button" onClick={compartir}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13" /></svg>Compartir
-              </button>
-            </div>
-            <p className="wa-status">{waMsg}</p>
+
+            {esZoom ? (
+              <div className="cred-zoom">
+                <p className="cred-zoom__msg">
+                  Quedaste inscripto/a a la charla <strong>online por Zoom</strong>.
+                  Te haremos llegar el <strong>link de la reunión</strong> antes del evento.
+                </p>
+                <p className="cred-zoom__code">Tu código: <strong>{result.codigo}</strong></p>
+              </div>
+            ) : (
+              <>
+                <div className="cred-preview">
+                  <img className="cred-img" src={api.credencialPng(result.codigo)} alt={"Credencial " + result.codigo} />
+                </div>
+                <div className="cred-actions">
+                  <a className="cred-btn cred-btn--gold" href={api.credencialPdf(result.codigo)} target="_blank" rel="noreferrer">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" /></svg>Descargar PDF
+                  </a>
+                  <button className="cred-btn cred-btn--ghost" type="button" onClick={compartir}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7M16 6l-4-4-4 4M12 2v13" /></svg>Compartir
+                  </button>
+                </div>
+                <p className="wa-status">{waMsg}</p>
+              </>
+            )}
           </div>
         </>
       )}

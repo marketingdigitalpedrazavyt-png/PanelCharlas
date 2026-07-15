@@ -1142,6 +1142,16 @@ body {
     min-height: 18px;
 }
 
+/* Confirmación de charla online (Zoom) */
+.cred-zoom { text-align: center; padding: 6px 4px 2px; }
+.cred-zoom__msg { margin: 0 0 14px; font-size: 15px; line-height: 1.55; color: #eaf2ff; }
+.cred-zoom__msg strong { color: #fff; }
+.cred-zoom__code {
+    margin: 0; font-size: 13px; letter-spacing: 0.08em;
+    color: var(--champagne);
+}
+.cred-zoom__code strong { font-size: 16px; letter-spacing: 0.12em; color: #fff; }
+
 /* =========================================================
    STAFF · escáner y panel
    ========================================================= */

@@ -28,6 +28,7 @@ export default function Panel() {
   const [fEvento, setFEvento] = useState("");
   const [fVendedor, setFVendedor] = useState("");
   const [fAsistencia, setFAsistencia] = useState(""); // "", "si", "no"
+  const [fModalidad, setFModalidad] = useState(""); // "", "presencial", "zoom"
   const [orden, setOrden] = useState({ col: "creado", dir: "desc" });
 
   // edición de inscripto
@@ -73,6 +74,7 @@ export default function Panel() {
       if (fVendedor && (r.vendedorNombre || "Directo") !== fVendedor) return false;
       if (fAsistencia === "si" && !r.asistio) return false;
       if (fAsistencia === "no" && r.asistio) return false;
+      if (fModalidad && (r.evento?.modalidad || "presencial") !== fModalidad) return false;
       if (!t) return true;
       return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
@@ -89,7 +91,7 @@ export default function Panel() {
       }
     };
     return [...arr].sort((a, b) => { const va = val(a), vb = val(b); return va < vb ? -mul : va > vb ? mul : 0; });
-  }, [inscriptos, search, fEvento, fVendedor, fAsistencia, orden]);
+  }, [inscriptos, search, fEvento, fVendedor, fAsistencia, fModalidad, orden]);
 
   function ordenarPor(col) {
     setOrden((o) => (o.col === col ? { col, dir: o.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
@@ -211,6 +213,11 @@ export default function Panel() {
             <select className="input select" value={fVendedor} onChange={(e) => setFVendedor(e.target.value)}>
               <option value="">Todos los vendedores</option>{vendedoresDistintos.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
+            <select className="input select" value={fModalidad} onChange={(e) => setFModalidad(e.target.value)}>
+              <option value="">Todas las modalidades</option>
+              <option value="presencial">Presencial</option>
+              <option value="zoom">Online (Zoom)</option>
+            </select>
             <select className="input select" value={fAsistencia} onChange={(e) => setFAsistencia(e.target.value)}>
               <option value="">Asistencia: todos</option>
               <option value="si">Solo asistieron</option>
@@ -237,7 +244,10 @@ export default function Panel() {
                   <tr key={r.codigo}>
                     <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
                     <td>{r.cjp}</td>
-                    <td>{r.evento?.lugar || r.evento?.barrio || r.eventoLabel}</td>
+                    <td>
+                      {r.evento?.modalidad === "zoom" && <span className="badge badge--zoom">Zoom</span>}{" "}
+                      {r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}
+                    </td>
                     <td>{fmtFecha(r.evento?.dia)}{r.evento?.hora ? " · " + r.evento.hora : ""}</td>
                     <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
                     <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
@@ -369,8 +379,9 @@ function ResumenTab({ inscriptos, eventos }) {
 
 /* ================= Eventos ================= */
 function EventosTab({ eventos, inscriptos, onChange }) {
-  const VACIO = { dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "" };
+  const VACIO = { dia: "", hora: "", lugar: "", direccion: "", barrio: "", vendedor: "", modalidad: "presencial", enlace: "" };
   const [f, setF] = useState(VACIO);
+  const esZoom = f.modalidad === "zoom";
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
@@ -403,7 +414,7 @@ function EventosTab({ eventos, inscriptos, onChange }) {
 
   function editar(ev) {
     setEditId(ev.id);
-    setF({ dia: ev.dia || "", hora: ev.hora || "", lugar: ev.lugar || "", direccion: ev.direccion || "", barrio: ev.barrio || "", vendedor: ev.vendedor || "" });
+    setF({ dia: ev.dia || "", hora: ev.hora || "", lugar: ev.lugar || "", direccion: ev.direccion || "", barrio: ev.barrio || "", vendedor: ev.vendedor || "", modalidad: ev.modalidad || "presencial", enlace: ev.enlace || "" });
     setError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -428,15 +439,31 @@ function EventosTab({ eventos, inscriptos, onChange }) {
         <h2>{editId ? "Editar evento" : "Crear evento"}</h2>
         <form className="form-grid" onSubmit={guardar}>
           <div className="form-2">
+            <label>Modalidad <span className="req">*</span>
+              <select className="input select" value={f.modalidad} onChange={set("modalidad")}>
+                <option value="presencial">Presencial</option>
+                <option value="zoom">Online (Zoom)</option>
+              </select>
+            </label>
+            <label>Vendedor a cargo <span className="hint">(opcional)</span><input className="input" value={f.vendedor} onChange={set("vendedor")} /></label>
+          </div>
+          <div className="form-2">
             <label>Día <span className="req">*</span><input className="input" type="date" value={f.dia} onChange={set("dia")} /></label>
             <label>Hora <span className="req">*</span><input className="input" type="time" value={f.hora} onChange={set("hora")} /></label>
           </div>
-          <label>Lugar <span className="hint">(opcional)</span><input className="input" value={f.lugar} onChange={set("lugar")} placeholder="Ej: Hotel Alvear" /></label>
-          <label>Dirección <span className="req">*</span><input className="input" value={f.direccion} onChange={set("direccion")} placeholder="Ej: Av. Alvear 1891" /></label>
-          <div className="form-2">
-            <label>Barrio <span className="req">*</span><input className="input" value={f.barrio} onChange={set("barrio")} placeholder="Ej: Recoleta" /></label>
-            <label>Vendedor a cargo <span className="hint">(opcional)</span><input className="input" value={f.vendedor} onChange={set("vendedor")} /></label>
-          </div>
+          {esZoom ? (
+            <label>Link de Zoom <span className="hint">(opcional · solo para el panel)</span>
+              <input className="input" value={f.enlace} onChange={set("enlace")} placeholder="https://zoom.us/j/…" />
+            </label>
+          ) : (
+            <>
+              <label>Lugar <span className="hint">(opcional)</span><input className="input" value={f.lugar} onChange={set("lugar")} placeholder="Ej: Hotel Alvear" /></label>
+              <div className="form-2">
+                <label>Dirección <span className="req">*</span><input className="input" value={f.direccion} onChange={set("direccion")} placeholder="Ej: Av. Alvear 1891" /></label>
+                <label>Barrio <span className="req">*</span><input className="input" value={f.barrio} onChange={set("barrio")} placeholder="Ej: Recoleta" /></label>
+              </div>
+            </>
+          )}
           <p className="msg-error">{error}</p>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn btn--primary">{editId ? "Guardar cambios" : "Crear evento"}</button>
@@ -457,8 +484,13 @@ function EventosTab({ eventos, inscriptos, onChange }) {
             return (
             <div className={"list-item" + (ev.activo ? "" : " list-item--off")} key={ev.id} style={editId === ev.id ? { borderColor: "rgba(255,255,255,0.5)" } : null}>
               <div className="list-item__info">
-                <strong>{ev.etiqueta}</strong>
-                <span>{ev.direccion}{ev.barrio ? " · " + ev.barrio : ""}{ev.vendedor ? " · A cargo: " + ev.vendedor : ""}</span>
+                <strong>
+                  {ev.modalidad === "zoom" && <span className="badge badge--zoom" style={{ marginRight: 8 }}>Zoom</span>}
+                  {ev.etiqueta}
+                </strong>
+                <span>{ev.modalidad === "zoom"
+                  ? (ev.enlace ? "Link: " + ev.enlace : "Online por Zoom") + (ev.vendedor ? " · A cargo: " + ev.vendedor : "")
+                  : `${ev.direccion}${ev.barrio ? " · " + ev.barrio : ""}${ev.vendedor ? " · A cargo: " + ev.vendedor : ""}`}</span>
               </div>
               <span className="count-pill" title={`${c.asist} asistieron`}>{c.total} insc.{c.total ? ` · ${c.asist} asist.` : ""}</span>
               <button className={"btn btn--sm " + (ev.activo ? "btn--ghost" : "btn--primary")} onClick={() => toggleActivo(ev)} title="Activar / desactivar para el formulario">

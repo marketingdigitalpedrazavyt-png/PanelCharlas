@@ -2,20 +2,26 @@ const { ValidationError } = require("../errors");
 
 const RE_FECHA = /^\d{4}-\d{2}-\d{2}$/;   // yyyy-mm-dd
 const RE_HORA = /^\d{2}:\d{2}$/;          // HH:MM
+const MODALIDADES = ["presencial", "zoom"];
 
 /**
- * Entidad Evento (charla). Obligatorios: dia, hora, direccion, barrio.
+ * Entidad Evento (charla). Obligatorios: dia, hora. Para eventos presenciales
+ * además direccion y barrio. Para eventos "zoom" (online) esos datos no aplican.
  */
-function crearEvento({ id = null, dia, hora, lugar = "", direccion, barrio, vendedor = "", activo = true }) {
+function crearEvento({ id = null, dia, hora, lugar = "", direccion, barrio, vendedor = "", activo = true, modalidad = "presencial", enlace = "" }) {
   dia = String(dia || "").trim();
   hora = String(hora || "").trim();
   direccion = String(direccion || "").trim();
   barrio = String(barrio || "").trim();
+  modalidad = MODALIDADES.includes(modalidad) ? modalidad : "presencial";
+  enlace = String(enlace || "").trim();
 
   if (!RE_FECHA.test(dia)) throw new ValidationError("El día es obligatorio (formato yyyy-mm-dd).");
   if (!RE_HORA.test(hora)) throw new ValidationError("La hora es obligatoria (formato HH:MM).");
-  if (!direccion) throw new ValidationError("La dirección es obligatoria.");
-  if (!barrio) throw new ValidationError("El barrio es obligatorio.");
+  if (modalidad === "presencial") {
+    if (!direccion) throw new ValidationError("La dirección es obligatoria.");
+    if (!barrio) throw new ValidationError("El barrio es obligatorio.");
+  }
 
   return Object.freeze({
     id, dia, hora,
@@ -23,14 +29,21 @@ function crearEvento({ id = null, dia, hora, lugar = "", direccion, barrio, vend
     direccion, barrio,
     vendedor: String(vendedor || "").trim(),
     activo: !!activo,
+    modalidad, enlace,
   });
 }
 
-/** Etiqueta legible: "15/08/2026 · 19:00 hs · Recoleta — Hotel Alvear" */
+/** Etiqueta legible:
+ *  presencial → "15/08/2026 · 19:00 hs · Recoleta — Hotel Alvear"
+ *  zoom       → "15/08/2026 · 19:00 hs · Online (Zoom)" */
 function etiquetaEvento(ev) {
   const fecha = formatFecha(ev.dia);
   const partes = [fecha];
   if (ev.hora) partes.push(ev.hora + " hs");
+  if (ev.modalidad === "zoom") {
+    partes.push("Online (Zoom)");
+    return partes.join(" · ");
+  }
   if (ev.barrio) partes.push(ev.barrio);
   let base = partes.join(" · ");
   if (ev.lugar) base += " — " + ev.lugar;

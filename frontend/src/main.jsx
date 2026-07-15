@@ -9,7 +9,8 @@ createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Inscripcion />} />
+        <Route path="/" element={<Inscripcion modalidad="presencial" />} />
+        <Route path="/online" element={<Inscripcion modalidad="zoom" />} />
         <Route path="/panel" element={<Panel />} />
         <Route path="/escaner" element={<Escaner />} />
       </Routes>

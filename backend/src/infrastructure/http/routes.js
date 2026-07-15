@@ -17,7 +17,7 @@ function buildRouter(uc) {
   r.get("/auth/me", auth, (req, res) => res.json(req.user));
 
   /* ---------- Público (formulario) ---------- */
-  r.get("/eventos/publicos", asyncH(async (req, res) => res.json(await uc.listarEventosPublicos.execute())));
+  r.get("/eventos/publicos", asyncH(async (req, res) => res.json(await uc.listarEventosPublicos.execute(req.query.modalidad))));
   r.get("/vendedores/:slug", asyncH(async (req, res) => res.json(await uc.resolverVendedor.execute(req.params.slug))));
   r.post("/inscripciones", asyncH(async (req, res) => res.status(201).json(await uc.crearInscripcion.execute(req.body || {}))));
 

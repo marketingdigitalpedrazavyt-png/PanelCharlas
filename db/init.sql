@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS eventos (
   barrio     VARCHAR(120) NOT NULL,
   vendedor   VARCHAR(120) NULL,            -- vendedor "a cargo" del evento (opcional)
   activo     TINYINT(1) NOT NULL DEFAULT 1,
+  modalidad  VARCHAR(20) NOT NULL DEFAULT 'presencial',  -- 'presencial' | 'zoom'
+  enlace     VARCHAR(500) NULL,            -- link de Zoom (solo eventos online)
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

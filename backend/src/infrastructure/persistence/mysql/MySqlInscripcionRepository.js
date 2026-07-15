@@ -21,6 +21,7 @@ function map(row) {
       ? {
           id: row.evento_id, dia: row.e_dia, hora: row.e_hora, lugar: row.e_lugar || "",
           direccion: row.e_direccion, barrio: row.e_barrio,
+          modalidad: row.e_modalidad || "presencial",
         }
       : null,
   };
@@ -28,7 +29,7 @@ function map(row) {
 
 const SELECT_JOIN = `
   SELECT i.*, e.dia AS e_dia, e.hora AS e_hora, e.lugar AS e_lugar,
-         e.direccion AS e_direccion, e.barrio AS e_barrio
+         e.direccion AS e_direccion, e.barrio AS e_barrio, e.modalidad AS e_modalidad
   FROM inscripciones i
   LEFT JOIN eventos e ON e.id = i.evento_id`;
 

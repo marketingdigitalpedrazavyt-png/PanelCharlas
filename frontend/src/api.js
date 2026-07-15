@@ -21,7 +21,7 @@ async function req(path, { method = "GET", body, auth = false } = {}) {
 
 export const api = {
   // --- público ---
-  eventosPublicos: () => req("/eventos/publicos"),
+  eventosPublicos: (modalidad) => req("/eventos/publicos" + (modalidad ? "?modalidad=" + encodeURIComponent(modalidad) : "")),
   resolverVendedor: (slug) => req("/vendedores/" + encodeURIComponent(slug)),
   crearInscripcion: (body) => req("/inscripciones", { method: "POST", body }),
   marcarAsistencia: (codigo) => req("/asistencia/" + encodeURIComponent(codigo), { method: "POST" }),
