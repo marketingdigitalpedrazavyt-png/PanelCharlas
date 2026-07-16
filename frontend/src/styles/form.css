@@ -717,7 +717,7 @@ body {
 #submitBtn:active { transform: translateY(0) scale(0.99); }
 
 #submitBtn:disabled {
-    cursor: progress;
+    cursor: not-allowed;
     filter: saturate(0.6) brightness(0.92);
     transform: none;
     box-shadow: 0 6px 18px -10px rgba(217, 173, 85, 0.5);

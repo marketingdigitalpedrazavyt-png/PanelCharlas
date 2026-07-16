@@ -219,7 +219,9 @@ export default function Inscripcion({ modalidad = "presencial" }) {
             </div>
 
             <button type="submit" id="submitBtn" disabled={loading || (eventos && eventos.length === 0)}>
-              Confirmar mi inscripción
+              {eventos && eventos.length === 0
+                ? (esZoom ? "No hay charlas online disponibles" : "No hay eventos disponibles")
+                : "Confirmar mi inscripción"}
             </button>
           </form>
         </section>
