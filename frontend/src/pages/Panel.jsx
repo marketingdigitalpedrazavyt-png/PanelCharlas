@@ -4,6 +4,12 @@ import { api, setToken, clearToken, hasToken } from "../api.js";
 import "../styles/admin.css";
 
 const fmtFecha = (d) => { const p = String(d || "").split("-"); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : (d || ""); };
+const fmtDiaMes = (d) => { const p = String(d || "").slice(0, 10).split("-"); return p.length === 3 ? `${p[2]}/${p[1]}` : (d || ""); };
+const soloFecha = (s) => String(s || "").slice(0, 10); // "YYYY-MM-DD" de un createdAt
+function fechaLocal(offsetDias = 0) {
+  const d = new Date(); d.setDate(d.getDate() - offsetDias);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 const fmtHoraIng = (s) => { if (!s) return ""; const m = String(s).match(/(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/); return m ? `${m[3]}/${m[2]} ${m[4]}:${m[5]}` : String(s); };
 
 export default function Panel() {
@@ -236,12 +242,7 @@ export default function Panel() {
         ))}
       </div>
 
-      {tab === "resumen" && (
-        <ResumenTab
-          inscriptos={inscriptos.filter((i) => (i.evento?.modalidad || "presencial") !== "zoom")}
-          eventos={eventos.filter((e) => (e.modalidad || "presencial") !== "zoom")}
-        />
-      )}
+      {tab === "resumen" && <ResumenTab inscriptos={inscriptos} eventos={eventos} />}
 
       {(tab === "inscriptos" || tab === "zoom") && (
         <div className="tab-panel is-active">
@@ -356,16 +357,34 @@ export default function Panel() {
 
 /* ================= Resumen (dashboard) ================= */
 function ResumenTab({ inscriptos, eventos }) {
-  const total = inscriptos.length;
-  const asist = inscriptos.filter((i) => i.asistio).length;
-  const tasa = total ? Math.round((asist / total) * 100) : 0;
-  const activos = eventos.filter((e) => e.activo).length;
+  // El resumen es de eventos PRESENCIALES (Zoom solo en la comparativa)
+  const pres = useMemo(() => inscriptos.filter((i) => (i.evento?.modalidad || "presencial") !== "zoom"), [inscriptos]);
+  const zoomList = useMemo(() => inscriptos.filter((i) => (i.evento?.modalidad || "presencial") === "zoom"), [inscriptos]);
+  const eventosPres = useMemo(() => eventos.filter((e) => (e.modalidad || "presencial") !== "zoom"), [eventos]);
 
+  const total = pres.length;
+  const asist = pres.filter((i) => i.asistio).length;
+  const tasa = total ? Math.round((asist / total) * 100) : 0;
+  const activos = eventosPres.filter((e) => e.activo).length;
+
+  // #6 recencia
+  const hoy = fechaLocal(0), hace6 = fechaLocal(6);
+  const inscHoy = pres.filter((i) => soloFecha(i.createdAt) === hoy).length;
+  const insc7 = pres.filter((i) => soloFecha(i.createdAt) >= hace6).length;
+
+  // #1 inscriptos por día (últimos 14 con datos)
+  const porDia = useMemo(() => {
+    const m = new Map();
+    for (const i of pres) { const d = soloFecha(i.createdAt); if (d) m.set(d, (m.get(d) || 0) + 1); }
+    return [...m.entries()].map(([dia, n]) => ({ dia, n })).sort((a, b) => (a.dia < b.dia ? -1 : 1)).slice(-14);
+  }, [pres]);
+
+  // #4 por evento con % de asistencia
   const porEvento = useMemo(() => {
     const m = new Map();
-    for (const ev of eventos) m.set(ev.id, { label: ev.etiqueta || ev.lugar || ev.barrio, total: 0, asist: 0 });
+    for (const ev of eventosPres) m.set(ev.id, { label: ev.etiqueta || ev.lugar || ev.barrio, total: 0, asist: 0 });
     let sinEvento = 0;
-    for (const i of inscriptos) {
+    for (const i of pres) {
       const id = i.evento?.id;
       if (id && m.has(id)) { const o = m.get(id); o.total++; if (i.asistio) o.asist++; }
       else sinEvento++;
@@ -373,26 +392,83 @@ function ResumenTab({ inscriptos, eventos }) {
     const arr = [...m.values()].filter((o) => o.total > 0);
     if (sinEvento) arr.push({ label: "Sin evento", total: sinEvento, asist: 0 });
     return arr.sort((a, b) => b.total - a.total);
-  }, [inscriptos, eventos]);
+  }, [pres, eventosPres]);
 
+  // #3 ranking de vendedores con tasa de asistencia
   const porVendedor = useMemo(() => {
     const m = new Map();
-    for (const i of inscriptos) { const k = i.vendedorNombre || "Directo"; m.set(k, (m.get(k) || 0) + 1); }
-    return [...m.entries()].map(([nombre, n]) => ({ nombre, n })).sort((a, b) => b.n - a.n);
-  }, [inscriptos]);
+    for (const i of pres) {
+      const k = i.vendedorNombre || "Directo";
+      if (!m.has(k)) m.set(k, { nombre: k, n: 0, asist: 0 });
+      const o = m.get(k); o.n++; if (i.asistio) o.asist++;
+    }
+    return [...m.values()].sort((a, b) => b.n - a.n);
+  }, [pres]);
 
+  // #7 top instituciones
+  const porInstitucion = useMemo(() => {
+    const m = new Map();
+    for (const i of pres) { const k = (i.cjp || "").trim(); if (k) m.set(k, (m.get(k) || 0) + 1); }
+    return [...m.entries()].map(([nombre, n]) => ({ nombre, n })).sort((a, b) => b.n - a.n).slice(0, 8);
+  }, [pres]);
+
+  const zoomTotal = zoomList.length;
   const maxEv = Math.max(1, ...porEvento.map((o) => o.total));
   const maxVe = Math.max(1, ...porVendedor.map((o) => o.n));
+  const maxDia = Math.max(1, ...porDia.map((o) => o.n));
+  const maxInst = Math.max(1, ...porInstitucion.map((o) => o.n));
+  const maxMod = Math.max(1, total, zoomTotal);
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 
   return (
     <div className="tab-panel is-active">
-      <div className="stats">
-        <div className="stat stat--accent"><b>{total}</b><span>Inscriptos totales</span></div>
-        <div className="stat"><b>{asist}</b><span>Asistieron ({tasa}%)</span></div>
-        <div className="stat"><b>{total - asist}</b><span>Pendientes</span></div>
-        <div className="stat"><b>{activos}/{eventos.length}</b><span>Eventos activos</span></div>
+      <div className="resumen-head">
+        <button className="btn btn--ghost btn--sm no-print" onClick={() => window.print()}>Imprimir / PDF</button>
       </div>
 
+      <div className="stats">
+        <div className="stat stat--accent"><b>{total}</b><span>Inscriptos (presencial)</span></div>
+        <div className="stat"><b>{asist}</b><span>Asistieron ({tasa}%)</span></div>
+        <div className="stat"><b>{total - asist}</b><span>Pendientes</span></div>
+        <div className="stat"><b>{activos}/{eventosPres.length}</b><span>Eventos activos</span></div>
+        <div className="stat"><b>{inscHoy}</b><span>Inscriptos hoy</span></div>
+        <div className="stat"><b>{insc7}</b><span>Últimos 7 días</span></div>
+      </div>
+
+      {/* #8 Presencial vs Online */}
+      <div className="card">
+        <h2>Presencial vs Online (Zoom)</h2>
+        <div className="barlist">
+          <div className="barrow">
+            <div className="barrow__label">Presencial</div>
+            <div className="bar"><div className="bar__fill" style={{ width: (total / maxMod) * 100 + "%" }} /></div>
+            <div className="barrow__val">{total}</div>
+          </div>
+          <div className="barrow">
+            <div className="barrow__label">Online (Zoom)</div>
+            <div className="bar"><div className="bar__fill bar__fill--zoom" style={{ width: (zoomTotal / maxMod) * 100 + "%" }} /></div>
+            <div className="barrow__val">{zoomTotal}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* #1 Inscriptos por día */}
+      <div className="card">
+        <h2>Inscriptos por día</h2>
+        {porDia.length ? (
+          <div className="barlist">
+            {porDia.map((o) => (
+              <div className="barrow" key={o.dia}>
+                <div className="barrow__label">{fmtDiaMes(o.dia)}</div>
+                <div className="bar"><div className="bar__fill" style={{ width: (o.n / maxDia) * 100 + "%" }} /></div>
+                <div className="barrow__val">{o.n}</div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="empty">Sin datos todavía.</p>}
+      </div>
+
+      {/* #4 Inscriptos por evento (con % asistencia) */}
       <div className="card">
         <h2>Inscriptos por evento</h2>
         {porEvento.length ? (
@@ -401,13 +477,14 @@ function ResumenTab({ inscriptos, eventos }) {
               <div className="barrow" key={idx}>
                 <div className="barrow__label" title={o.label}>{o.label}</div>
                 <div className="bar"><div className="bar__fill" style={{ width: (o.total / maxEv) * 100 + "%" }} /></div>
-                <div className="barrow__val">{o.total}<span className="muted"> · {o.asist} asist.</span></div>
+                <div className="barrow__val">{o.total}<span className="muted"> · {o.asist} asist. ({pct(o.asist, o.total)}%)</span></div>
               </div>
             ))}
           </div>
         ) : <p className="empty">Sin datos todavía.</p>}
       </div>
 
+      {/* #3 Ranking de vendedores (con asistencia) */}
       <div className="card">
         <h2>Ranking de vendedores</h2>
         {porVendedor.length ? (
@@ -416,11 +493,27 @@ function ResumenTab({ inscriptos, eventos }) {
               <div className="barrow" key={idx}>
                 <div className="barrow__label" title={o.nombre}>{idx + 1}. {o.nombre}</div>
                 <div className="bar"><div className="bar__fill" style={{ width: (o.n / maxVe) * 100 + "%" }} /></div>
-                <div className="barrow__val">{o.n}</div>
+                <div className="barrow__val">{o.n}<span className="muted"> · {pct(o.asist, o.n)}% asist.</span></div>
               </div>
             ))}
           </div>
         ) : <p className="empty">Sin datos todavía.</p>}
+      </div>
+
+      {/* #7 Top instituciones */}
+      <div className="card">
+        <h2>Instituciones más frecuentes</h2>
+        {porInstitucion.length ? (
+          <div className="barlist">
+            {porInstitucion.map((o, idx) => (
+              <div className="barrow" key={idx}>
+                <div className="barrow__label" title={o.nombre}>{o.nombre}</div>
+                <div className="bar"><div className="bar__fill" style={{ width: (o.n / maxInst) * 100 + "%" }} /></div>
+                <div className="barrow__val">{o.n}</div>
+              </div>
+            ))}
+          </div>
+        ) : <p className="empty">Sin datos de instituciones todavía.</p>}
       </div>
     </div>
   );

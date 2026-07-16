@@ -344,6 +344,19 @@ table.data tr:hover td { background: rgba(255, 255, 255, 0.03); }
 .barrow__val .muted { color: var(--muted); font-weight: 600; }
 .bar { height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
 .bar__fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #2f6df6, #6aa1ff); min-width: 3px; transition: width 0.3s ease; }
+.bar__fill--zoom { background: linear-gradient(90deg, #7c4dff, #b39dff); }
+
+.resumen-head { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+
+/* ---------- Impresión del resumen ---------- */
+@media print {
+    body { background: #fff; color: #000; }
+    .topbar, .tabs, .no-print { display: none !important; }
+    .card { break-inside: avoid; border-color: #ccc; box-shadow: none; }
+    .stat { border-color: #ccc; }
+    .bar { background: #eee; }
+    .bar__fill { background: #555 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
