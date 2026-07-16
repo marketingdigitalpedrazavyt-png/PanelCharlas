@@ -273,6 +273,7 @@ export default function Panel() {
             <table className={"data" + (tab === "zoom" ? " data--narrow" : "")}>
               <thead><tr>
                 <th className="th-sort" onClick={() => ordenarPor("nombre")}>Nombre{flecha("nombre")}</th>
+                {tab === "zoom" && <th>Apellido</th>}
                 <th className="th-sort" onClick={() => ordenarPor("dni")}>DNI{flecha("dni")}</th>
                 <th>Celular</th>{tab === "zoom" ? <th>Email</th> : <th>Institución</th>}
                 {tab !== "zoom" && <>
@@ -287,7 +288,10 @@ export default function Panel() {
               <tbody>
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
-                    <td>{r.nombre} {r.apellido}{esDup(r) && <span className="badge badge--dup" style={{ marginLeft: 6 }} title="Mismo DNI o celular en otra inscripción">dup</span>}</td><td>{r.dni}</td><td>{r.celular}</td>
+                    {tab === "zoom"
+                      ? <><td>{r.nombre}{esDup(r) && <span className="badge badge--dup" style={{ marginLeft: 6 }} title="Mismo DNI o celular en otra inscripción">dup</span>}</td><td>{r.apellido}</td></>
+                      : <td>{r.nombre} {r.apellido}{esDup(r) && <span className="badge badge--dup" style={{ marginLeft: 6 }} title="Mismo DNI o celular en otra inscripción">dup</span>}</td>}
+                    <td>{r.dni}</td><td>{r.celular}</td>
                     {tab === "zoom" ? <td>{r.email}</td> : <td>{r.cjp}</td>}
                     {tab !== "zoom" && <>
                       <td>{r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}</td>

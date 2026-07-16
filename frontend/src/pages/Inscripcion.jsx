@@ -263,7 +263,7 @@ export default function Inscripcion({ modalidad = "presencial" }) {
               <div className="cred-zoom">
                 <p className="cred-zoom__msg">
                   Quedaste inscripto/a a la charla <strong>online por Zoom</strong>.
-                  Te haremos llegar el <strong>link de la reunión</strong> antes del evento.
+                  El día anterior al evento, recibirás vía <strong>WhatsApp</strong> el enlace para participar del mismo.
                 </p>
               </div>
             ) : (
