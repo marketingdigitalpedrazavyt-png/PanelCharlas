@@ -15,11 +15,42 @@ function beep(ok) {
   } catch (e) { /* sin sonido */ }
 }
 
+const onlyDigits = (s) => String(s || "").replace(/\D/g, "");
+
 export default function Escaner() {
   const [result, setResult] = useState(null);
   const [count, setCount] = useState(0);
   const busy = useRef(false);
   const last = useRef({ code: null, t: 0 });
+
+  // Búsqueda manual por DNI (si el asistente llega sin QR)
+  const [dni, setDni] = useState("");
+  const [buscando, setBuscando] = useState(false);
+  const [manuales, setManuales] = useState(null); // null = sin buscar
+  const [manualMsg, setManualMsg] = useState("");
+
+  async function buscarManual(e) {
+    e.preventDefault();
+    const d = onlyDigits(dni);
+    setManualMsg("");
+    if (d.length < 7) { setManualMsg("Ingresá un DNI válido."); return; }
+    setBuscando(true);
+    try {
+      const r = await api.buscarPorDni(d);
+      setManuales((r || []).filter((x) => x.modalidad !== "zoom"));
+    } catch (err) { setManualMsg("No se pudo buscar. Reintentá."); }
+    finally { setBuscando(false); }
+  }
+
+  async function marcarManual(item) {
+    try {
+      const r = await api.marcarAsistencia(item.codigo);
+      const asistio = r.estado === "ok" || r.estado === "ya";
+      setManuales((l) => (l || []).map((x) => (x.codigo === item.codigo ? { ...x, asistio, _estado: r.estado } : x)));
+      if (r.estado === "ok") setCount((c) => c + 1);
+      beep(r.estado === "ok");
+    } catch (e) { setManualMsg("No se pudo marcar. Reintentá."); beep(false); }
+  }
 
   useEffect(() => {
     const html5 = new Html5Qrcode("reader");
@@ -74,6 +105,34 @@ export default function Escaner() {
           </div>
         )}
         <p className="scan-count">Asistencias registradas: <strong>{count}</strong></p>
+      </div>
+
+      <div className="card scanner">
+        <h2 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 800 }}>¿Llegó sin QR?</h2>
+        <p className="scan-hint" style={{ marginTop: 0 }}>Buscá por DNI y marcá el ingreso manualmente.</p>
+        <form onSubmit={buscarManual} className="toolbar" style={{ marginTop: 10 }}>
+          <input className="input" type="text" inputMode="numeric" placeholder="DNI (sin puntos)"
+            value={dni} onChange={(e) => setDni(onlyDigits(e.target.value).slice(0, 9))} />
+          <button className="btn btn--primary btn--sm" disabled={buscando}>{buscando ? "Buscando…" : "Buscar"}</button>
+        </form>
+        {manualMsg && <p className="scan-hint" style={{ color: "#ff9ea1" }}>{manualMsg}</p>}
+        {manuales && (
+          manuales.length ? (
+            <div className="list" style={{ marginTop: 12 }}>
+              {manuales.map((m) => (
+                <div className="list-item" key={m.codigo}>
+                  <div className="list-item__info">
+                    <strong>{m.nombre} {m.apellido}</strong>
+                    <span>{m.eventoLabel}</span>
+                  </div>
+                  {m.asistio
+                    ? <span className="badge badge--yes">{m._estado === "ok" ? "¡Ingresó!" : "Ya ingresó"}</span>
+                    : <button className="btn btn--primary btn--sm" onClick={() => marcarManual(m)}>Marcar ingreso</button>}
+                </div>
+              ))}
+            </div>
+          ) : <p className="scan-hint" style={{ marginTop: 12 }}>No hay inscriptos presenciales con ese DNI.</p>
+        )}
       </div>
     </div>
   );

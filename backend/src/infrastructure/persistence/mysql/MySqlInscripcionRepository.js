@@ -96,6 +96,13 @@ class MySqlInscripcionRepository extends InscripcionRepository {
     return map(rows[0]);
   }
 
+  async buscarPorDni(dni) {
+    const d = String(dni || "").replace(/\D/g, "");
+    if (d.length < 7) return [];
+    const [rows] = await pool.query(`${SELECT_JOIN} WHERE i.dni = :dni ORDER BY i.created_at DESC`, { dni: d });
+    return rows.map(map);
+  }
+
   async marcarAsistencia(codigo) {
     const actual = await this.buscarPorCodigo(codigo);
     if (!actual) return { estado: "no-existe" };

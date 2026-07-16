@@ -32,6 +32,7 @@ class InscripcionRepository {
   async actualizar(codigo, datos) { noimpl(); } // edita datos de un inscripto
   async listar(filtros) { noimpl(); }           // con datos del evento (join)
   async buscarPorCodigo(codigo) { noimpl(); }
+  async buscarPorDni(dni) { noimpl(); }         // todas las inscripciones de un DNI
   async marcarAsistencia(codigo) { noimpl(); }  // false→true; devuelve estado
   async setAsistencia(codigo, asistio) { noimpl(); } // marca/desmarca desde el panel
   async eliminar(codigo) { noimpl(); }

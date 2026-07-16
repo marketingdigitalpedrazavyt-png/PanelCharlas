@@ -25,6 +25,9 @@ function buildRouter(uc) {
   r.get("/inscripciones/:codigo/credencial.png", asyncH((req, res) => enviarCredencial(uc, req, res, "png")));
   r.get("/inscripciones/:codigo/credencial.pdf", asyncH((req, res) => enviarCredencial(uc, req, res, "pdf")));
 
+  // Búsqueda pública por DNI (recuperar credencial + escáner manual). Datos mínimos.
+  r.get("/inscripciones/buscar", asyncH(async (req, res) => res.json(await uc.buscarInscripcionesPorDni.execute(req.query.dni))));
+
   // Escáner (abierto): marca asistencia
   r.post("/asistencia/:codigo", asyncH(async (req, res) => res.json(await uc.marcarAsistencia.execute(req.params.codigo))));
 
@@ -43,6 +46,7 @@ function buildRouter(uc) {
   r.post("/eventos", auth, asyncH(async (req, res) => res.status(201).json(await uc.crearEvento.execute(req.body || {}))));
   r.put("/eventos/:id", auth, asyncH(async (req, res) => res.json(await uc.actualizarEvento.execute(req.params.id, req.body || {}))));
   r.put("/eventos/:id/activo", auth, asyncH(async (req, res) => res.json(await uc.cambiarEstadoEvento.execute(req.params.id, (req.body || {}).activo))));
+  r.post("/eventos/:id/reenviar", auth, asyncH(async (req, res) => res.json(await uc.reenviarCredencialesEvento.execute(req.params.id, req.body || {}))));
   r.delete("/eventos/:id", auth, asyncH(async (req, res) => res.json(await uc.eliminarEvento.execute(req.params.id))));
 
   r.get("/vendedores", auth, asyncH(async (req, res) => res.json(await uc.listarVendedores.execute())));

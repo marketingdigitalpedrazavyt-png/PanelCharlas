@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Inscripcion from "./pages/Inscripcion.jsx";
 import Panel from "./pages/Panel.jsx";
 import Escaner from "./pages/Escaner.jsx";
+import Credencial from "./pages/Credencial.jsx";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -11,6 +12,7 @@ createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/" element={<Inscripcion modalidad="presencial" />} />
         <Route path="/online" element={<Inscripcion modalidad="zoom" />} />
+        <Route path="/credencial" element={<Credencial />} />
         <Route path="/panel" element={<Panel />} />
         <Route path="/escaner" element={<Escaner />} />
       </Routes>

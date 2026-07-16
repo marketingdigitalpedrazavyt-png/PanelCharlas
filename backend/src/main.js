@@ -20,7 +20,8 @@ const { CrearEvento, ActualizarEvento, CambiarEstadoEvento, ListarEventos, Lista
 const { CrearVendedor, ListarVendedores, EliminarVendedor, ResolverVendedor } = require("./application/vendedorUseCases");
 const {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
-  MarcarAsistencia, CambiarAsistencia, ReenviarCredencial, ObtenerCredencial,
+  MarcarAsistencia, CambiarAsistencia, ReenviarCredencial, ReenviarCredencialesEvento,
+  BuscarInscripcionesPorDni, ObtenerCredencial,
 } = require("./application/inscripcionUseCases");
 
 const { createServer } = require("./infrastructure/http/server");
@@ -69,6 +70,8 @@ async function main() {
     marcarAsistencia: new MarcarAsistencia({ inscripcionRepo }),
     cambiarAsistencia: new CambiarAsistencia({ inscripcionRepo }),
     reenviarCredencial: new ReenviarCredencial({ inscripcionRepo, credencial, whatsapp }),
+    reenviarCredencialesEvento: new ReenviarCredencialesEvento({ inscripcionRepo, eventoRepo, credencial, whatsapp }),
+    buscarInscripcionesPorDni: new BuscarInscripcionesPorDni({ inscripcionRepo }),
     obtenerCredencial: new ObtenerCredencial({ inscripcionRepo, credencial }),
   };
 

@@ -123,6 +123,61 @@ class ReenviarCredencial {
   }
 }
 
+/** Búsqueda pública por DNI (para recuperar credencial y para el escáner).
+ *  Devuelve datos mínimos, no expone celular/email. */
+class BuscarInscripcionesPorDni {
+  constructor({ inscripcionRepo }) { this.inscripcionRepo = inscripcionRepo; }
+  async execute(dni) {
+    const d = String(dni || "").replace(/\D/g, "");
+    if (d.length < 7) return [];
+    const filas = await this.inscripcionRepo.buscarPorDni(d);
+    return filas.map((r) => ({
+      codigo: r.codigo,
+      nombre: r.nombre,
+      apellido: r.apellido,
+      asistio: !!r.asistio,
+      modalidad: r.evento?.modalidad || "presencial",
+      eventoLabel: r.evento ? etiquetaEvento(r.evento) : "",
+      dia: r.evento?.dia || "",
+      hora: r.evento?.hora || "",
+    }));
+  }
+}
+
+/** Reenvía la credencial por WhatsApp a todos los inscriptos de un evento
+ *  presencial (opcionalmente solo a los que aún no asistieron). */
+class ReenviarCredencialesEvento {
+  constructor({ inscripcionRepo, eventoRepo, credencial, whatsapp }) {
+    Object.assign(this, { inscripcionRepo, eventoRepo, credencial, whatsapp });
+  }
+  async execute(eventoId, { soloPendientes = true } = {}) {
+    const evento = await this.eventoRepo.buscarPorId(eventoId);
+    if (!evento) throw new NotFoundError("No existe ese evento.");
+    if (evento.modalidad === "zoom") throw new ValidationError("Los eventos por Zoom no envían credencial por WhatsApp.");
+
+    const todas = await this.inscripcionRepo.listar();
+    let objetivo = todas.filter((i) => i.evento && i.evento.id === evento.id);
+    if (soloPendientes) objetivo = objetivo.filter((i) => !i.asistio);
+
+    let enviados = 0, fallidos = 0;
+    for (const insc of objetivo) {
+      try {
+        const { png } = await this.credencial.generar(datosCredencial(insc, evento));
+        const caption =
+          `¡Hola ${insc.nombre}! Te reenviamos tu credencial para la charla informativa ` +
+          `sobre el paquete: Las Maravillas del Mediterráneo. ` +
+          `Presentá este código en el ingreso: ${insc.codigo} o mostrá el QR de la credencial. ` +
+          `¡Te esperamos!`;
+        const r = await this.whatsapp.enviarImagen({
+          celularWhatsApp: celularAWhatsApp(insc.celular), caption, png,
+        });
+        if (r && r.ok !== false) enviados++; else fallidos++;
+      } catch (e) { fallidos++; }
+    }
+    return { total: objetivo.length, enviados, fallidos };
+  }
+}
+
 /** Usado por el escáner (abierto). */
 class MarcarAsistencia {
   constructor({ inscripcionRepo }) { this.inscripcionRepo = inscripcionRepo; }
@@ -153,5 +208,6 @@ class ObtenerCredencial {
 
 module.exports = {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
-  MarcarAsistencia, CambiarAsistencia, ReenviarCredencial, ObtenerCredencial,
+  MarcarAsistencia, CambiarAsistencia, ReenviarCredencial, ReenviarCredencialesEvento,
+  BuscarInscripcionesPorDni, ObtenerCredencial,
 };

@@ -28,6 +28,7 @@ export default function Panel() {
   const [fEvento, setFEvento] = useState("");
   const [fVendedor, setFVendedor] = useState("");
   const [fAsistencia, setFAsistencia] = useState(""); // "", "si", "no"
+  const [soloDup, setSoloDup] = useState(false);
   const [orden, setOrden] = useState({ col: "creado", dir: "desc" });
 
   // La pestaña define la modalidad: "inscriptos" = presencial, "zoom" = zoom
@@ -50,7 +51,7 @@ export default function Panel() {
   useEffect(() => { if (user) cargarTodo(); }, [user]);
 
   // Al cambiar de pestaña, los filtros arrancan limpios
-  useEffect(() => { setSearch(""); setFEvento(""); setFVendedor(""); setFAsistencia(""); }, [tab]);
+  useEffect(() => { setSearch(""); setFEvento(""); setFVendedor(""); setFAsistencia(""); setSoloDup(false); }, [tab]);
 
   async function cargarTodo() {
     try {
@@ -71,6 +72,20 @@ export default function Panel() {
   function logout() { clearToken(); setUser(null); }
 
   /* ---------- Inscriptos: filtros / export ---------- */
+  // Duplicados: DNI o celular que aparecen en más de una inscripción (varios eventos)
+  const dupInfo = useMemo(() => {
+    const dniC = {}, celC = {};
+    for (const i of inscriptos) {
+      if (i.dni) dniC[i.dni] = (dniC[i.dni] || 0) + 1;
+      if (i.celular) celC[i.celular] = (celC[i.celular] || 0) + 1;
+    }
+    return {
+      dni: new Set(Object.keys(dniC).filter((k) => dniC[k] > 1)),
+      cel: new Set(Object.keys(celC).filter((k) => celC[k] > 1)),
+    };
+  }, [inscriptos]);
+  const esDup = (r) => dupInfo.dni.has(r.dni) || dupInfo.cel.has(r.celular);
+
   // Base según la pestaña (presencial o zoom)
   const baseModalidad = useMemo(
     () => inscriptos.filter((i) => (i.evento?.modalidad || "presencial") === modTab),
@@ -85,6 +100,7 @@ export default function Panel() {
       if (fVendedor && (r.vendedorNombre || "Directo") !== fVendedor) return false;
       if (fAsistencia === "si" && !r.asistio) return false;
       if (fAsistencia === "no" && r.asistio) return false;
+      if (soloDup && !(dupInfo.dni.has(r.dni) || dupInfo.cel.has(r.celular))) return false;
       if (!t) return true;
       return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.email} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
@@ -101,7 +117,7 @@ export default function Panel() {
       }
     };
     return [...arr].sort((a, b) => { const va = val(a), vb = val(b); return va < vb ? -mul : va > vb ? mul : 0; });
-  }, [baseModalidad, search, fEvento, fVendedor, fAsistencia, orden]);
+  }, [baseModalidad, search, fEvento, fVendedor, fAsistencia, soloDup, dupInfo, orden]);
 
   function ordenarPor(col) {
     setOrden((o) => (o.col === col ? { col, dir: o.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
@@ -110,7 +126,8 @@ export default function Panel() {
 
   // Stats reflejan el filtro/búsqueda activos (ej: al filtrar por evento, el total es el de ese evento)
   const asis = filtrados.filter((i) => i.asistio).length;
-  const hayFiltro = !!(fEvento || fVendedor || search.trim());
+  const hayFiltro = !!(fEvento || fVendedor || search.trim() || soloDup);
+  const dupCount = baseModalidad.filter((r) => dupInfo.dni.has(r.dni) || dupInfo.cel.has(r.celular)).length;
 
   function filasExport() {
     if (tab === "zoom") {
@@ -247,6 +264,7 @@ export default function Panel() {
               <option value="si">Solo asistieron</option>
               <option value="no">Solo pendientes</option>
             </select>}
+            <button className={"btn btn--sm " + (soloDup ? "btn--primary" : "btn--ghost")} onClick={() => setSoloDup((v) => !v)} title="Mostrar solo DNI/celular repetidos en varios eventos">Duplicados{dupCount ? ` (${dupCount})` : ""}</button>
             <button className="btn btn--ghost btn--sm" onClick={exportCSV}>Exportar CSV</button>
             <button className="btn btn--ghost btn--sm" onClick={exportXLSX}>Exportar Excel</button>
           </div>
@@ -268,7 +286,7 @@ export default function Panel() {
               <tbody>
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
-                    <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
+                    <td>{r.nombre} {r.apellido}{esDup(r) && <span className="badge badge--dup" style={{ marginLeft: 6 }} title="Mismo DNI o celular en otra inscripción">dup</span>}</td><td>{r.dni}</td><td>{r.celular}</td>
                     {tab === "zoom" ? <td>{r.email}</td> : <td>{r.cjp}</td>}
                     {tab !== "zoom" && <>
                       <td>{r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}</td>
@@ -438,9 +456,21 @@ function EventosTab({ eventos, inscriptos, onChange }) {
     );
   }, [eventos, q]);
 
+  const [reenviando, setReenviando] = useState(null);
+
   async function toggleActivo(ev) {
     try { await api.cambiarEstadoEvento(ev.id, !ev.activo); onChange(); }
     catch (e) { alert("No se pudo cambiar el estado del evento."); }
+  }
+  async function reenviarEvento(ev) {
+    if (reenviando) return;
+    if (!confirm(`¿Reenviar la credencial por WhatsApp a los inscriptos PENDIENTES de:\n${ev.etiqueta}?`)) return;
+    setReenviando(ev.id);
+    try {
+      const r = await api.reenviarEvento(ev.id, true);
+      alert(`Reenvío terminado.\nEnviadas: ${r.enviados}\nFallidas: ${r.fallidos}\nTotal pendientes: ${r.total}`);
+    } catch (e) { alert("No se pudo reenviar: " + (e.message || "")); }
+    finally { setReenviando(null); }
   }
 
   function editar(ev) {
@@ -527,6 +557,11 @@ function EventosTab({ eventos, inscriptos, onChange }) {
               <button className={"btn btn--sm " + (ev.activo ? "btn--ghost" : "btn--primary")} onClick={() => toggleActivo(ev)} title="Activar / desactivar para el formulario">
                 {ev.activo ? "● Activo" : "○ Inactivo"}
               </button>
+              {ev.modalidad !== "zoom" && (
+                <button className="btn btn--ghost btn--sm" disabled={reenviando === ev.id} onClick={() => reenviarEvento(ev)} title="Reenviar credencial por WhatsApp a los pendientes">
+                  {reenviando === ev.id ? "Enviando…" : "Reenviar WA"}
+                </button>
+              )}
               <button className="btn btn--ghost btn--sm" onClick={() => editar(ev)}>Editar</button>
               <button className="icon-btn" onClick={() => borrar(ev.id)}>✕</button>
             </div>

@@ -1143,6 +1143,12 @@ body {
     min-height: 18px;
 }
 
+/* Recuperar credencial */
+.recuperar__list { display: flex; flex-direction: column; gap: 22px; margin-top: 22px; }
+.recuperar__item { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.recuperar__ev { margin: 0; font-size: 13px; color: var(--champagne); letter-spacing: 0.02em; text-align: center; }
+.recuperar__empty { margin-top: 20px; text-align: center; font-size: 14px; color: rgba(247, 243, 234, 0.7); }
+
 /* Evento fijo (Zoom sin selector) */
 .field-static {
     margin: 0;
