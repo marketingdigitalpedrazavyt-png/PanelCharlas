@@ -31,9 +31,9 @@ export default function Inscripcion({ modalidad = "presencial" }) {
     if (slug) api.resolverVendedor(slug).then(setVendedor).catch(() => {});
   }, [params, modalidad]);
 
-  // Zoom sin selector: si hay un único evento, se elige automáticamente.
+  // Zoom sin selector: se anota automáticamente a la charla online disponible.
   useEffect(() => {
-    if (esZoom && Array.isArray(eventos) && eventos.length === 1) {
+    if (esZoom && Array.isArray(eventos) && eventos.length >= 1) {
       setForm((f) => (f.eventoId ? f : { ...f, eventoId: String(eventos[0].id) }));
     }
   }, [esZoom, eventos]);
@@ -186,29 +186,12 @@ export default function Inscripcion({ modalidad = "presencial" }) {
               <span className="script">Inscribite a la</span>
               <span className="title">{esZoom ? "Charla Online" : "Charla"}</span>
               <span className="subtitle">{esZoom
-                ? "Elegí la charla por Zoom, completá tus datos y quedás inscripto/a"
+                ? "Completá tus datos y quedás inscripto/a a la charla por Zoom"
                 : "Elegí el evento, completá tus datos y recibí tu credencial con QR"}</span>
               {vendedor && <span className="vendor-chip">Te invitó: {vendedor.nombre}</span>}
             </div>
 
-            {esZoom ? (
-              (eventos && eventos.length > 1) ? (
-                <div className="field">
-                  <label htmlFor="evento">Charla online a la que asistís</label>
-                  <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>
-                    <option value="" disabled>Elegí una charla…</option>
-                    {eventos.map((e) => <option key={e.id} value={e.id}>{e.etiqueta}</option>)}
-                  </select>
-                </div>
-              ) : (
-                <div className="field">
-                  <label>Charla online</label>
-                  <p className="field-static">
-                    {eventos === null ? "Cargando…" : (eventos.length === 1 ? eventos[0].etiqueta : "No hay charlas online disponibles por ahora.")}
-                  </p>
-                </div>
-              )
-            ) : (
+            {!esZoom && (
               <div className="field">
                 <label htmlFor="evento">Evento al que asistís</label>
                 <select id="evento" value={form.eventoId} onChange={(e) => set("eventoId", e.target.value)} required>

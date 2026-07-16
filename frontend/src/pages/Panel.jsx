@@ -28,8 +28,10 @@ export default function Panel() {
   const [fEvento, setFEvento] = useState("");
   const [fVendedor, setFVendedor] = useState("");
   const [fAsistencia, setFAsistencia] = useState(""); // "", "si", "no"
-  const [fModalidad, setFModalidad] = useState(""); // "", "presencial", "zoom"
   const [orden, setOrden] = useState({ col: "creado", dir: "desc" });
+
+  // La pestaña define la modalidad: "inscriptos" = presencial, "zoom" = zoom
+  const modTab = tab === "zoom" ? "zoom" : "presencial";
 
   // edición de inscripto
   const [editando, setEditando] = useState(null);
@@ -45,6 +47,9 @@ export default function Panel() {
   }, []);
 
   useEffect(() => { if (user) cargarTodo(); }, [user]);
+
+  // Al cambiar de pestaña, los filtros arrancan limpios
+  useEffect(() => { setSearch(""); setFEvento(""); setFVendedor(""); setFAsistencia(""); }, [tab]);
 
   async function cargarTodo() {
     try {
@@ -65,16 +70,20 @@ export default function Panel() {
   function logout() { clearToken(); setUser(null); }
 
   /* ---------- Inscriptos: filtros / export ---------- */
-  const eventosDistintos = useMemo(() => [...new Set(inscriptos.map((i) => i.eventoLabel).filter(Boolean))].sort(), [inscriptos]);
-  const vendedoresDistintos = useMemo(() => [...new Set(inscriptos.map((i) => i.vendedorNombre || "Directo"))].sort(), [inscriptos]);
+  // Base según la pestaña (presencial o zoom)
+  const baseModalidad = useMemo(
+    () => inscriptos.filter((i) => (i.evento?.modalidad || "presencial") === modTab),
+    [inscriptos, modTab]
+  );
+  const eventosDistintos = useMemo(() => [...new Set(baseModalidad.map((i) => i.eventoLabel).filter(Boolean))].sort(), [baseModalidad]);
+  const vendedoresDistintos = useMemo(() => [...new Set(baseModalidad.map((i) => i.vendedorNombre || "Directo"))].sort(), [baseModalidad]);
   const filtrados = useMemo(() => {
     const t = search.trim().toLowerCase();
-    const arr = inscriptos.filter((r) => {
+    const arr = baseModalidad.filter((r) => {
       if (fEvento && (r.eventoLabel || "") !== fEvento) return false;
       if (fVendedor && (r.vendedorNombre || "Directo") !== fVendedor) return false;
       if (fAsistencia === "si" && !r.asistio) return false;
       if (fAsistencia === "no" && r.asistio) return false;
-      if (fModalidad && (r.evento?.modalidad || "presencial") !== fModalidad) return false;
       if (!t) return true;
       return `${r.nombre} ${r.apellido} ${r.dni} ${r.celular} ${r.cjp} ${r.email} ${r.codigo} ${r.eventoLabel} ${r.vendedorNombre}`.toLowerCase().includes(t);
     });
@@ -91,7 +100,7 @@ export default function Panel() {
       }
     };
     return [...arr].sort((a, b) => { const va = val(a), vb = val(b); return va < vb ? -mul : va > vb ? mul : 0; });
-  }, [inscriptos, search, fEvento, fVendedor, fAsistencia, fModalidad, orden]);
+  }, [baseModalidad, search, fEvento, fVendedor, fAsistencia, orden]);
 
   function ordenarPor(col) {
     setOrden((o) => (o.col === col ? { col, dir: o.dir === "asc" ? "desc" : "asc" } : { col, dir: "asc" }));
@@ -188,22 +197,27 @@ export default function Panel() {
       </div>
 
       <div className="tabs">
-        {["resumen", "inscriptos", "eventos", "vendedores"].concat(esSuper ? ["usuarios"] : []).map((t) => (
+        {["resumen", "inscriptos", "zoom", "eventos", "vendedores"].concat(esSuper ? ["usuarios"] : []).map((t) => (
           <button key={t} className={"tab" + (tab === t ? " is-active" : "")} onClick={() => setTab(t)}>
             {t[0].toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
 
-      {tab === "resumen" && <ResumenTab inscriptos={inscriptos} eventos={eventos} />}
+      {tab === "resumen" && (
+        <ResumenTab
+          inscriptos={inscriptos.filter((i) => (i.evento?.modalidad || "presencial") !== "zoom")}
+          eventos={eventos.filter((e) => (e.modalidad || "presencial") !== "zoom")}
+        />
+      )}
 
-      {tab === "inscriptos" && (
+      {(tab === "inscriptos" || tab === "zoom") && (
         <div className="tab-panel is-active">
           <div className="stats">
-            <div className="stat stat--accent"><b>{filtrados.length}</b><span>{hayFiltro ? "Inscriptos (filtrado)" : "Inscriptos"}</span></div>
+            <div className="stat stat--accent"><b>{filtrados.length}</b><span>{hayFiltro ? (tab === "zoom" ? "Inscriptos Zoom (filtrado)" : "Inscriptos (filtrado)") : (tab === "zoom" ? "Inscriptos Zoom" : "Inscriptos")}</span></div>
             <div className="stat"><b>{asis}</b><span>Asistieron</span></div>
             <div className="stat"><b>{filtrados.length - asis}</b><span>Pendientes</span></div>
-            <div className="stat"><b>{eventos.filter((e) => e.activo).length}</b><span>Eventos activos</span></div>
+            <div className="stat"><b>{eventos.filter((e) => e.activo && (e.modalidad || "presencial") === modTab).length}</b><span>{tab === "zoom" ? "Charlas Zoom activas" : "Eventos activos"}</span></div>
           </div>
           <div className="toolbar">
             <input className="input" type="search" placeholder="Buscar por nombre, DNI, código…" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -212,11 +226,6 @@ export default function Panel() {
             </select>
             <select className="input select" value={fVendedor} onChange={(e) => setFVendedor(e.target.value)}>
               <option value="">Todos los vendedores</option>{vendedoresDistintos.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <select className="input select" value={fModalidad} onChange={(e) => setFModalidad(e.target.value)}>
-              <option value="">Todas las modalidades</option>
-              <option value="presencial">Presencial</option>
-              <option value="zoom">Online (Zoom)</option>
             </select>
             <select className="input select" value={fAsistencia} onChange={(e) => setFAsistencia(e.target.value)}>
               <option value="">Asistencia: todos</option>
@@ -231,7 +240,7 @@ export default function Panel() {
               <thead><tr>
                 <th className="th-sort" onClick={() => ordenarPor("nombre")}>Nombre{flecha("nombre")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("dni")}>DNI{flecha("dni")}</th>
-                <th>Celular</th><th>Institución</th><th>Email</th>
+                <th>Celular</th>{tab === "zoom" ? <th>Email</th> : <th>Institución</th>}
                 <th className="th-sort" onClick={() => ordenarPor("evento")}>Evento{flecha("evento")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("fecha")}>Día / Hora{flecha("fecha")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("vendedor")}>Vendedor{flecha("vendedor")}</th>
@@ -243,12 +252,8 @@ export default function Panel() {
                 {filtrados.map((r) => (
                   <tr key={r.codigo}>
                     <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
-                    <td>{r.cjp}</td>
-                    <td>{r.email}</td>
-                    <td>
-                      {r.evento?.modalidad === "zoom" && <span className="badge badge--zoom">Zoom</span>}{" "}
-                      {r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}
-                    </td>
+                    {tab === "zoom" ? <td>{r.email}</td> : <td>{r.cjp}</td>}
+                    <td>{r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}</td>
                     <td>{fmtFecha(r.evento?.dia)}{r.evento?.hora ? " · " + r.evento.hora : ""}</td>
                     <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
                     <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
@@ -265,7 +270,7 @@ export default function Panel() {
               </tbody>
             </table>
           </div>
-          {!filtrados.length && <p className="empty">{inscriptos.length ? "Sin resultados." : "Sin inscriptos todavía."}</p>}
+          {!filtrados.length && <p className="empty">{baseModalidad.length ? "Sin resultados." : (tab === "zoom" ? "Sin inscriptos de Zoom todavía." : "Sin inscriptos todavía.")}</p>}
         </div>
       )}
 
