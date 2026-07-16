@@ -96,6 +96,33 @@ class ActualizarInscripcion {
   }
 }
 
+/** Reenvía la credencial por WhatsApp a un inscripto (acción manual del panel).
+ *  Solo aplica a eventos presenciales (los Zoom no llevan credencial). */
+class ReenviarCredencial {
+  constructor({ inscripcionRepo, credencial, whatsapp }) {
+    Object.assign(this, { inscripcionRepo, credencial, whatsapp });
+  }
+  async execute(codigo) {
+    const insc = await this.inscripcionRepo.buscarPorCodigo(codigo);
+    if (!insc) throw new NotFoundError("No existe esa inscripción.");
+    const evento = insc.evento;
+    if (evento && evento.modalidad === "zoom") {
+      throw new ValidationError("Los eventos por Zoom no envían credencial por WhatsApp.");
+    }
+    const { png } = await this.credencial.generar(datosCredencial(insc, evento));
+    const caption =
+      `¡Hola ${insc.nombre}! Te reenviamos tu credencial para la charla informativa ` +
+      `sobre el paquete: Las Maravillas del Mediterráneo. ` +
+      `Presentá este código en el ingreso: ${insc.codigo} o mostrá el QR de la credencial. ` +
+      `¡Te esperamos!`;
+    const r = await this.whatsapp.enviarImagen({
+      celularWhatsApp: celularAWhatsApp(insc.celular), caption, png,
+    });
+    if (!r || r.ok === false) throw new ValidationError((r && r.error) || "No se pudo enviar por WhatsApp.");
+    return { ok: true };
+  }
+}
+
 /** Usado por el escáner (abierto). */
 class MarcarAsistencia {
   constructor({ inscripcionRepo }) { this.inscripcionRepo = inscripcionRepo; }
@@ -126,5 +153,5 @@ class ObtenerCredencial {
 
 module.exports = {
   CrearInscripcion, ListarInscripciones, EliminarInscripcion, ActualizarInscripcion,
-  MarcarAsistencia, CambiarAsistencia, ObtenerCredencial,
+  MarcarAsistencia, CambiarAsistencia, ReenviarCredencial, ObtenerCredencial,
 };

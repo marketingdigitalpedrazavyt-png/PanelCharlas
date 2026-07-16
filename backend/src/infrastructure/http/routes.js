@@ -36,6 +36,7 @@ function buildRouter(uc) {
   r.get("/inscripciones", auth, asyncH(async (req, res) => res.json(await uc.listarInscripciones.execute())));
   r.put("/inscripciones/:codigo", auth, asyncH(async (req, res) => res.json(await uc.actualizarInscripcion.execute(req.params.codigo, req.body || {}))));
   r.put("/inscripciones/:codigo/asistencia", auth, asyncH(async (req, res) => res.json(await uc.cambiarAsistencia.execute(req.params.codigo, (req.body || {}).asistio))));
+  r.post("/inscripciones/:codigo/reenviar", auth, asyncH(async (req, res) => res.json(await uc.reenviarCredencial.execute(req.params.codigo))));
   r.delete("/inscripciones/:codigo", auth, asyncH(async (req, res) => res.json(await uc.eliminarInscripcion.execute(req.params.codigo))));
 
   r.get("/eventos", auth, asyncH(async (req, res) => res.json(await uc.listarEventos.execute())));

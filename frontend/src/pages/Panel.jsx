@@ -37,6 +37,7 @@ export default function Panel() {
   const [editando, setEditando] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editError, setEditError] = useState("");
+  const [waSending, setWaSending] = useState(null); // código enviándose por WhatsApp
 
   const esSuper = user?.rol === "superadmin";
   const linkBase = window.location.origin + "/";
@@ -147,6 +148,15 @@ export default function Panel() {
       const upd = await api.cambiarAsistencia(r.codigo, !r.asistio);
       setInscriptos((l) => l.map((i) => (i.codigo === r.codigo ? { ...i, asistio: upd.asistio, asistioAt: upd.asistioAt } : i)));
     } catch (e) { alert("No se pudo actualizar la asistencia."); }
+  }
+  async function reenviarWhatsApp(r) {
+    if (waSending) return;
+    setWaSending(r.codigo);
+    try {
+      await api.reenviarCredencial(r.codigo);
+      alert(`Credencial reenviada por WhatsApp a ${r.nombre} ${r.apellido}.`);
+    } catch (e) { alert("No se pudo reenviar por WhatsApp:\n" + (e.message || "")); }
+    finally { setWaSending(null); }
   }
 
   function abrirEdicion(r) {
@@ -274,6 +284,7 @@ export default function Panel() {
                       )}
                       <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(r)}>Editar</button>
                       {tab !== "zoom" && <a className="btn btn--ghost btn--sm" href={api.credencialPdf(r.codigo)} target="_blank" rel="noreferrer">PDF</a>}
+                      {tab !== "zoom" && <button className="btn btn--ghost btn--sm" disabled={waSending === r.codigo} onClick={() => reenviarWhatsApp(r)}>{waSending === r.codigo ? "Enviando…" : "WhatsApp"}</button>}
                       <button className="btn btn--danger btn--sm" onClick={() => borrarInscripto(r)}>Borrar</button>
                     </div></td>
                   </tr>

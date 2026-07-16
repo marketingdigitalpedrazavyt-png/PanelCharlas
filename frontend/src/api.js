@@ -36,6 +36,7 @@ export const api = {
   listarInscripciones: () => req("/inscripciones", { auth: true }),
   actualizarInscripcion: (codigo, b) => req("/inscripciones/" + encodeURIComponent(codigo), { method: "PUT", body: b, auth: true }),
   cambiarAsistencia: (codigo, asistio) => req("/inscripciones/" + encodeURIComponent(codigo) + "/asistencia", { method: "PUT", body: { asistio }, auth: true }),
+  reenviarCredencial: (codigo) => req("/inscripciones/" + encodeURIComponent(codigo) + "/reenviar", { method: "POST", auth: true }),
   eliminarInscripcion: (codigo) => req("/inscripciones/" + encodeURIComponent(codigo), { method: "DELETE", auth: true }),
   listarEventos: () => req("/eventos", { auth: true }),
   crearEvento: (b) => req("/eventos", { method: "POST", body: b, auth: true }),
