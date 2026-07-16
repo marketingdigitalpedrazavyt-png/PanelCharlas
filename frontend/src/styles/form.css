@@ -542,7 +542,8 @@ body {
 }
 
 .formulario input[type="text"],
-.formulario input[type="tel"] {
+.formulario input[type="tel"],
+.formulario input[type="email"] {
     width: 100%;
     padding: 10px 14px;
     border-radius: 13px;
