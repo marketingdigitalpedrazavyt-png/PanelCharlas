@@ -16,7 +16,7 @@ const pool = mysql.createPool({
 });
 
 /** Espera a que MySQL esté disponible (arranque del contenedor). */
-async function esperarConexion(reintentos = 30, esperaMs = 2000) {
+async function esperarConexion(reintentos = 60, esperaMs = 2000) {
   for (let i = 1; i <= reintentos; i++) {
     try { await pool.query("SELECT 1"); return; }
     catch (e) {
