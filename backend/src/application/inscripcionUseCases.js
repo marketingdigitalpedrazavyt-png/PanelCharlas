@@ -155,18 +155,34 @@ class BuscarInscripcionesPorDni {
 class ReenviarCredencialesEvento {
   constructor({ inscripcionRepo, eventoRepo, credencial, whatsapp }) {
     Object.assign(this, { inscripcionRepo, eventoRepo, credencial, whatsapp });
+    this._enCurso = new Set(); // eventoId con un reenvío en proceso
   }
   async execute(eventoId, { soloPendientes = true } = {}) {
     const evento = await this.eventoRepo.buscarPorId(eventoId);
     if (!evento) throw new NotFoundError("No existe ese evento.");
     if (evento.modalidad === "zoom") throw new ValidationError("Los eventos por Zoom no envían credencial por WhatsApp.");
 
+    const key = String(eventoId);
+    if (this._enCurso.has(key)) throw new ValidationError("Ya hay un reenvío en curso para este evento. Esperá a que termine.");
+
     const todas = await this.inscripcionRepo.listar();
     let objetivo = todas.filter((i) => i.evento && i.evento.id === evento.id);
     if (soloPendientes) objetivo = objetivo.filter((i) => !i.asistio);
 
+    // Se envía en SEGUNDO PLANO y ESPACIADO. WAHA es un cliente no oficial:
+    // mandar en ráfaga hace que WhatsApp detecte spam y banee el número.
+    if (objetivo.length) {
+      this._enCurso.add(key);
+      this._enviarEspaciado(objetivo, evento).finally(() => this._enCurso.delete(key));
+    }
+    return { total: objetivo.length, encolados: objetivo.length };
+  }
+
+  async _enviarEspaciado(objetivo, evento) {
+    const MIN_MS = 8000, MAX_MS = 15000; // pausa aleatoria 8–15 s entre mensajes
     let enviados = 0, fallidos = 0;
-    for (const insc of objetivo) {
+    for (let i = 0; i < objetivo.length; i++) {
+      const insc = objetivo[i];
       try {
         const { png } = await this.credencial.generar(datosCredencial(insc, evento));
         const caption = recordatorioCredencial(insc);
@@ -175,8 +191,11 @@ class ReenviarCredencialesEvento {
         });
         if (r && r.ok !== false) enviados++; else fallidos++;
       } catch (e) { fallidos++; }
+      if (i < objetivo.length - 1) {
+        await new Promise((res) => setTimeout(res, MIN_MS + Math.floor(Math.random() * (MAX_MS - MIN_MS))));
+      }
     }
-    return { total: objetivo.length, enviados, fallidos };
+    console.log(`[reenvio-masivo] evento ${evento.id}: enviados ${enviados}, fallidos ${fallidos} de ${objetivo.length}`);
   }
 }
 

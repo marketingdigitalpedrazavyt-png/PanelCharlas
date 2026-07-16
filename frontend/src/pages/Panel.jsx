@@ -562,12 +562,13 @@ function EventosTab({ eventos, inscriptos, onChange }) {
   }
   async function reenviarEvento(ev) {
     if (reenviando) return;
-    if (!confirm(`¿Reenviar la credencial por WhatsApp a los inscriptos PENDIENTES de:\n${ev.etiqueta}?`)) return;
+    if (!confirm(`¿Reenviar la credencial por WhatsApp a los PENDIENTES de:\n${ev.etiqueta}?\n\nSe envían de a uno, con una pausa entre cada uno, para no saturar WhatsApp. Puede tardar varios minutos.`)) return;
     setReenviando(ev.id);
     try {
       const r = await api.reenviarEvento(ev.id, true);
-      alert(`Reenvío terminado.\nEnviadas: ${r.enviados}\nFallidas: ${r.fallidos}\nTotal pendientes: ${r.total}`);
-    } catch (e) { alert("No se pudo reenviar: " + (e.message || "")); }
+      if (!r.total) alert("No hay inscriptos pendientes en este evento.");
+      else alert(`Se van a reenviar ${r.total} credenciales, de a una con pausa (para no saturar WhatsApp). Van saliendo en segundo plano; tardan unos minutos en enviarse todas.`);
+    } catch (e) { alert("No se pudo iniciar el reenvío: " + (e.message || "")); }
     finally { setReenviando(null); }
   }
 
