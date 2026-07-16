@@ -398,7 +398,7 @@ function ResumenTab({ inscriptos, eventos }) {
     return arr.sort((a, b) => b.total - a.total);
   }, [pres, eventosPres]);
 
-  // #3 ranking de vendedores con tasa de asistencia
+  // #3 ranking de vendedores ordenado por % de asistencia
   const porVendedor = useMemo(() => {
     const m = new Map();
     for (const i of pres) {
@@ -406,7 +406,9 @@ function ResumenTab({ inscriptos, eventos }) {
       if (!m.has(k)) m.set(k, { nombre: k, n: 0, asist: 0 });
       const o = m.get(k); o.n++; if (i.asistio) o.asist++;
     }
-    return [...m.values()].sort((a, b) => b.n - a.n);
+    return [...m.values()]
+      .map((o) => ({ ...o, pct: o.n ? Math.round((o.asist / o.n) * 100) : 0 }))
+      .sort((a, b) => b.pct - a.pct || b.n - a.n);
   }, [pres]);
 
   // #7 top instituciones
@@ -418,7 +420,6 @@ function ResumenTab({ inscriptos, eventos }) {
 
   const zoomTotal = zoomList.length;
   const maxEv = Math.max(1, ...porEvento.map((o) => o.total));
-  const maxVe = Math.max(1, ...porVendedor.map((o) => o.n));
   const maxDia = Math.max(1, ...porDia.map((o) => o.n));
   const maxInst = Math.max(1, ...porInstitucion.map((o) => o.n));
   const maxMod = Math.max(1, total, zoomTotal);
@@ -488,16 +489,16 @@ function ResumenTab({ inscriptos, eventos }) {
         ) : <p className="empty">Sin datos todavía.</p>}
       </div>
 
-      {/* #3 Ranking de vendedores (con asistencia) */}
+      {/* #3 Ranking de vendedores por % de asistencia */}
       <div className="card">
-        <h2>Ranking de vendedores</h2>
+        <h2>Ranking de vendedores (por % de asistencia)</h2>
         {porVendedor.length ? (
           <div className="barlist">
             {porVendedor.map((o, idx) => (
               <div className="barrow" key={idx}>
                 <div className="barrow__label" title={o.nombre}>{idx + 1}. {o.nombre}</div>
-                <div className="bar"><div className="bar__fill" style={{ width: (o.n / maxVe) * 100 + "%" }} /></div>
-                <div className="barrow__val">{o.n}<span className="muted"> · {pct(o.asist, o.n)}% asist.</span></div>
+                <div className="bar"><div className="bar__fill" style={{ width: o.pct + "%" }} /></div>
+                <div className="barrow__val">{o.pct}%<span className="muted"> · {o.asist}/{o.n}</span></div>
               </div>
             ))}
           </div>
