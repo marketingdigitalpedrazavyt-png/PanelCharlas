@@ -112,6 +112,11 @@ export default function Panel() {
   const hayFiltro = !!(fEvento || fVendedor || search.trim());
 
   function filasExport() {
+    if (tab === "zoom") {
+      return filtrados.map((r) => ({
+        Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, Email: r.email || "",
+      }));
+    }
     return filtrados.map((r) => ({
       Nombre: r.nombre, Apellido: r.apellido, DNI: r.dni, Celular: r.celular, Institucion: r.cjp || "", Email: r.email || "",
       Evento: r.eventoLabel || "", Dia: fmtFecha(r.evento?.dia), Hora: r.evento?.hora || "",
@@ -215,37 +220,39 @@ export default function Panel() {
         <div className="tab-panel is-active">
           <div className="stats">
             <div className="stat stat--accent"><b>{filtrados.length}</b><span>{hayFiltro ? (tab === "zoom" ? "Inscriptos Zoom (filtrado)" : "Inscriptos (filtrado)") : (tab === "zoom" ? "Inscriptos Zoom" : "Inscriptos")}</span></div>
-            <div className="stat"><b>{asis}</b><span>Asistieron</span></div>
-            <div className="stat"><b>{filtrados.length - asis}</b><span>Pendientes</span></div>
+            {tab !== "zoom" && <div className="stat"><b>{asis}</b><span>Asistieron</span></div>}
+            {tab !== "zoom" && <div className="stat"><b>{filtrados.length - asis}</b><span>Pendientes</span></div>}
             <div className="stat"><b>{eventos.filter((e) => e.activo && (e.modalidad || "presencial") === modTab).length}</b><span>{tab === "zoom" ? "Charlas Zoom activas" : "Eventos activos"}</span></div>
           </div>
           <div className="toolbar">
-            <input className="input" type="search" placeholder="Buscar por nombre, DNI, código…" value={search} onChange={(e) => setSearch(e.target.value)} />
-            <select className="input select" value={fEvento} onChange={(e) => setFEvento(e.target.value)}>
+            <input className="input" type="search" placeholder="Buscar por nombre, DNI, email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+            {tab !== "zoom" && <select className="input select" value={fEvento} onChange={(e) => setFEvento(e.target.value)}>
               <option value="">Todos los eventos</option>{eventosDistintos.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <select className="input select" value={fVendedor} onChange={(e) => setFVendedor(e.target.value)}>
+            </select>}
+            {tab !== "zoom" && <select className="input select" value={fVendedor} onChange={(e) => setFVendedor(e.target.value)}>
               <option value="">Todos los vendedores</option>{vendedoresDistintos.map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-            <select className="input select" value={fAsistencia} onChange={(e) => setFAsistencia(e.target.value)}>
+            </select>}
+            {tab !== "zoom" && <select className="input select" value={fAsistencia} onChange={(e) => setFAsistencia(e.target.value)}>
               <option value="">Asistencia: todos</option>
               <option value="si">Solo asistieron</option>
               <option value="no">Solo pendientes</option>
-            </select>
+            </select>}
             <button className="btn btn--ghost btn--sm" onClick={exportCSV}>Exportar CSV</button>
             <button className="btn btn--ghost btn--sm" onClick={exportXLSX}>Exportar Excel</button>
           </div>
           <div className="table-wrap">
-            <table className="data">
+            <table className={"data" + (tab === "zoom" ? " data--narrow" : "")}>
               <thead><tr>
                 <th className="th-sort" onClick={() => ordenarPor("nombre")}>Nombre{flecha("nombre")}</th>
                 <th className="th-sort" onClick={() => ordenarPor("dni")}>DNI{flecha("dni")}</th>
                 <th>Celular</th>{tab === "zoom" ? <th>Email</th> : <th>Institución</th>}
-                <th className="th-sort" onClick={() => ordenarPor("evento")}>Evento{flecha("evento")}</th>
-                <th className="th-sort" onClick={() => ordenarPor("fecha")}>Día / Hora{flecha("fecha")}</th>
-                <th className="th-sort" onClick={() => ordenarPor("vendedor")}>Vendedor{flecha("vendedor")}</th>
-                <th>Código</th>
-                <th className="th-sort" onClick={() => ordenarPor("asistio")}>Asistió{flecha("asistio")}</th>
+                {tab !== "zoom" && <>
+                  <th className="th-sort" onClick={() => ordenarPor("evento")}>Evento{flecha("evento")}</th>
+                  <th className="th-sort" onClick={() => ordenarPor("fecha")}>Día / Hora{flecha("fecha")}</th>
+                  <th className="th-sort" onClick={() => ordenarPor("vendedor")}>Vendedor{flecha("vendedor")}</th>
+                  <th>Código</th>
+                  <th className="th-sort" onClick={() => ordenarPor("asistio")}>Asistió{flecha("asistio")}</th>
+                </>}
                 <th>Acciones</th>
               </tr></thead>
               <tbody>
@@ -253,16 +260,20 @@ export default function Panel() {
                   <tr key={r.codigo}>
                     <td>{r.nombre} {r.apellido}</td><td>{r.dni}</td><td>{r.celular}</td>
                     {tab === "zoom" ? <td>{r.email}</td> : <td>{r.cjp}</td>}
-                    <td>{r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}</td>
-                    <td>{fmtFecha(r.evento?.dia)}{r.evento?.hora ? " · " + r.evento.hora : ""}</td>
-                    <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
-                    <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
+                    {tab !== "zoom" && <>
+                      <td>{r.evento?.modalidad === "zoom" ? "Online (Zoom)" : (r.evento?.lugar || r.evento?.barrio || r.eventoLabel)}</td>
+                      <td>{fmtFecha(r.evento?.dia)}{r.evento?.hora ? " · " + r.evento.hora : ""}</td>
+                      <td>{r.vendedorNombre || "Directo"}</td><td>{r.codigo}</td>
+                      <td>{r.asistio ? <span className="badge badge--yes">Sí</span> : <span className="badge badge--no">No</span>}</td>
+                    </>}
                     <td><div className="td-actions">
-                      <button className={"btn btn--sm " + (r.asistio ? "btn--ghost" : "btn--primary")} onClick={() => toggleAsistencia(r)}>
-                        {r.asistio ? "Quitar asist." : "Marcar asist."}
-                      </button>
+                      {tab !== "zoom" && (
+                        <button className={"btn btn--sm " + (r.asistio ? "btn--ghost" : "btn--primary")} onClick={() => toggleAsistencia(r)}>
+                          {r.asistio ? "Quitar asist." : "Marcar asist."}
+                        </button>
+                      )}
                       <button className="btn btn--ghost btn--sm" onClick={() => abrirEdicion(r)}>Editar</button>
-                      <a className="btn btn--ghost btn--sm" href={api.credencialPdf(r.codigo)} target="_blank" rel="noreferrer">PDF</a>
+                      {tab !== "zoom" && <a className="btn btn--ghost btn--sm" href={api.credencialPdf(r.codigo)} target="_blank" rel="noreferrer">PDF</a>}
                       <button className="btn btn--danger btn--sm" onClick={() => borrarInscripto(r)}>Borrar</button>
                     </div></td>
                   </tr>
