@@ -2,6 +2,16 @@ const { crearInscripcion, celularAWhatsApp } = require("../domain/model/Inscripc
 const { etiquetaEvento } = require("../domain/model/Evento");
 const { ValidationError, NotFoundError } = require("../domain/errors");
 
+/** Mensaje con tono de recordatorio (no de reenvío/error). */
+function recordatorioCredencial(insc) {
+  return (
+    `¡Hola ${insc.nombre}! Te recordamos que estás inscripto/a a la charla informativa ` +
+    `sobre el paquete Las Maravillas del Mediterráneo. ` +
+    `Te dejamos nuevamente tu credencial para el ingreso: presentá el código ${insc.codigo} ` +
+    `o mostrá el QR de la credencial. ¡Te esperamos!`
+  );
+}
+
 function datosCredencial(insc, evento) {
   return {
     codigo: insc.codigo,
@@ -110,11 +120,7 @@ class ReenviarCredencial {
       throw new ValidationError("Los eventos por Zoom no envían credencial por WhatsApp.");
     }
     const { png } = await this.credencial.generar(datosCredencial(insc, evento));
-    const caption =
-      `¡Hola ${insc.nombre}! Te reenviamos tu credencial para la charla informativa ` +
-      `sobre el paquete: Las Maravillas del Mediterráneo. ` +
-      `Presentá este código en el ingreso: ${insc.codigo} o mostrá el QR de la credencial. ` +
-      `¡Te esperamos!`;
+    const caption = recordatorioCredencial(insc);
     const r = await this.whatsapp.enviarImagen({
       celularWhatsApp: celularAWhatsApp(insc.celular), caption, png,
     });
@@ -163,11 +169,7 @@ class ReenviarCredencialesEvento {
     for (const insc of objetivo) {
       try {
         const { png } = await this.credencial.generar(datosCredencial(insc, evento));
-        const caption =
-          `¡Hola ${insc.nombre}! Te reenviamos tu credencial para la charla informativa ` +
-          `sobre el paquete: Las Maravillas del Mediterráneo. ` +
-          `Presentá este código en el ingreso: ${insc.codigo} o mostrá el QR de la credencial. ` +
-          `¡Te esperamos!`;
+        const caption = recordatorioCredencial(insc);
         const r = await this.whatsapp.enviarImagen({
           celularWhatsApp: celularAWhatsApp(insc.celular), caption, png,
         });

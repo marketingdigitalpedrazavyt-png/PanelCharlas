@@ -29,6 +29,10 @@ services:
     environment:
       WAHA_API_KEY: ${WAHA_API_KEY:-}
       WHATSAPP_DEFAULT_ENGINE: WEBJS
+      # Al reiniciar/redeploy, retoma automáticamente la sesión ya escaneada
+      # (que se persiste en el volumen de abajo). Sin esto la sesión queda
+      # detenida tras cada redeploy y hay que arrancarla a mano.
+      WHATSAPP_RESTART_ALL_SESSIONS: "True"
     ports:
       - "3000:3000"        # dashboard/API de WAHA para n8n
     volumes:
